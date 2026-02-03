@@ -2,6 +2,7 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Odpočet k prvnímu pivu 🍺</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,25 +17,28 @@ body {
 .container {
     max-width: 1200px;
     margin: auto;
-    padding: 20px;
+    padding: 15px;
     text-align: center;
 }
 
-h1 {
-    font-size: 70px;
-}
+h1 { font-size: 48px; }
 
 .tables {
     display: flex;
-    gap: 30px;
+    gap: 20px;
     justify-content: center;
     flex-wrap: wrap;
 }
 
+.table-box {
+    width: 100%;
+    max-width: 520px;
+}
+
 table {
+    width: 100%;
     border-collapse: collapse;
     background: white;
-    width: 500px;
     border-radius: 15px;
     overflow: hidden;
 }
@@ -42,32 +46,35 @@ table {
 th, td {
     border: 1px solid #ccc;
     padding: 6px;
+    font-size: 14px;
 }
 
 input {
-    width: 80px;
+    width: 100%;
+    font-size: 16px;
 }
 
 button {
-    padding: 4px 10px;
-    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 16px;
 }
 
 .message {
-    margin: 30px auto;
-    padding: 20px;
+    margin: 20px auto;
+    padding: 15px;
     background: white;
     border-radius: 15px;
-    font-size: 22px;
-    max-width: 800px;
-    word-wrap: break-word;
+    font-size: 18px;
+    max-width: 900px;
 }
 
 canvas {
+    width: 100% !important;
+    max-width: 1000px;
+    height: auto !important;
     background: white;
-    border-radius: 20px;
-    padding: 20px;
-    margin-top: 30px;
+    border-radius: 15px;
+    padding: 10px;
 }
 </style>
 </head>
@@ -79,12 +86,11 @@ canvas {
 <p>🍺 Odpočet k prvnímu pivu 🍺</p>
 
 <div class="tables">
-    <div>
+    <div class="table-box">
         <h2>Lukáš</h2>
         <table id="lukasTable"></table>
     </div>
-
-    <div>
+    <div class="table-box">
         <h2>Martin</h2>
         <table id="martinTable"></table>
     </div>
@@ -93,7 +99,7 @@ canvas {
 <div class="message" id="msg">---</div>
 
 <h2>📈 Vývoj váhy</h2>
-<canvas id="weightChart" width="1000" height="400"></canvas>
+<canvas id="weightChart"></canvas>
 
 </div>
 
@@ -104,12 +110,12 @@ const WRITE_API_KEY = "H753ZAUO7U3LT3J6";
 
 /************ HLAŠKY ************/
 const messages = [
-    "Forma na léto je zase o krok dál 😎",
-    "To pivo se samo nevypilo 🍺",
-    "Trenér by z tebe radost neměl 😈",
-    "Zimní objem se utrhl ze řetězu 🐷",
-    "Aspoň máš rezervy na horší časy 😅",
-    "Výživový poradce právě omdlel 🤡"
+    "Forma na léto se pomalu rýsuje 😎",
+    "To pivo za to stálo 🍺",
+    "Trenér právě brečí 😈",
+    "Zimní objem pokračuje 🐷",
+    "Výživový poradce omdlel 🤡",
+    "Aspoň nejsi kost a kůže 😅"
 ];
 
 /************ ODPORČET ************/
@@ -117,14 +123,10 @@ function endOfFebruary() {
     const y = new Date().getFullYear();
     return new Date(y, 2, 0, 23, 59, 59);
 }
-
 setInterval(() => {
-    const diff = endOfFebruary() - new Date();
-    const h = Math.floor(diff / 1000 / 60 / 60);
-    const m = Math.floor(diff / 1000 / 60) % 60;
-    const s = Math.floor(diff / 1000) % 60;
+    const d = endOfFebruary() - new Date();
     document.getElementById("time").innerText =
-        `${h}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+        `${Math.floor(d/36e5)}:${Math.floor(d/6e4)%60}:${Math.floor(d/1e3)%60}`;
 }, 1000);
 
 /************ TABULKY ************/
@@ -140,48 +142,59 @@ function makeTable(id, name) {
         </tr>`;
     }
 }
-makeTable("lukasTable", "lukas");
-makeTable("martinTable", "martin");
+makeTable("lukasTable","lukas");
+makeTable("martinTable","martin");
 
 /************ ULOŽENÍ ************/
 function save(name, day) {
-    const val = document.getElementById(name + day).value;
+    const val = document.getElementById(name+day).value;
     if (!val) return alert("Zadej váhu");
-
     const field = name === "lukas" ? 1 : 2;
 
     fetch(`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${val}&status=${name}-${day}`);
 
     document.getElementById("msg").innerText =
-        messages[Math.floor(Math.random() * messages.length)];
+        messages[Math.floor(Math.random()*messages.length)];
 
-    loadChart();
+    loadAll();
+}
+
+/************ NAČTENÍ DAT ************/
+function loadAll() {
+    fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=100`)
+    .then(r=>r.json())
+    .then(d=>{
+        const labels=[], l=[], m=[];
+        d.feeds.forEach(f=>{
+            if(f.status){
+                const [name,day]=f.status.split("-");
+                const el=document.getElementById(name+day);
+                if(el && f[`field${name==="lukas"?1:2}`]){
+                    el.value=f[`field${name==="lukas"?1:2}`];
+                }
+            }
+            labels.push(f.created_at.slice(5,10));
+            l.push(f.field1); m.push(f.field2);
+        });
+        drawChart(labels,l,m);
+    });
 }
 
 /************ GRAF ************/
 let chart;
-function loadChart() {
-    fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=60`)
-        .then(r => r.json())
-        .then(d => {
-            const labels = d.feeds.map(f => f.created_at.slice(5,10));
-            const lukas = d.feeds.map(f => f.field1);
-            const martin = d.feeds.map(f => f.field2);
-
-            if (chart) chart.destroy();
-            chart = new Chart(document.getElementById("weightChart"), {
-                type: "line",
-                data: {
-                    labels,
-                    datasets: [
-                        { label: "Lukáš", data: lukas },
-                        { label: "Martin", data: martin }
-                    ]
-                }
-            });
-        });
+function drawChart(labels,lukas,martin){
+    if(chart) chart.destroy();
+    chart=new Chart(weightChart,{
+        type:"line",
+        data:{labels,
+            datasets:[
+                {label:"Lukáš",data:lukas},
+                {label:"Martin",data:martin}
+            ]}
+    });
 }
-loadChart();
+
+loadAll();
 </script>
 
 </body>
