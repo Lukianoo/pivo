@@ -103,6 +103,8 @@ canvas{
 <canvas id="chart"></canvas>
 </div>
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+
 /************ THINGSPEAK ************/
 const CHANNEL_ID="3249143";
 const WRITE_API_KEY="H753ZAUO7U3LT3J6";
@@ -118,9 +120,9 @@ const messages=[
  "Jestli tohle je dieta, tak jsem papež 🤡"
 ];
 
-/************ ODPočET ************/
+/************ ODPočet ************/
 const year = new Date().getFullYear();
-const endDate = new Date(year, 2, 0, 23, 59, 59); // poslední den února 23:59:59
+const endDate = new Date(year, 1, new Date(year, 2, 0).getDate(), 23, 59, 59); // poslední den února 23:59:59
 
 function updateCountdown() {
   const now = new Date();
@@ -165,7 +167,7 @@ makeTable("lukasTable", "lukas");
 makeTable("martinTable", "martin");
 
 /************ ULOŽENÍ ************/
-function save(name, day) {
+window.save = function(name, day) {
   const input = document.getElementById(name + day);
   const value = input.value.trim();
 
@@ -178,7 +180,6 @@ function save(name, day) {
   const field = name === "lukas" ? 1 : 2;
   const url = `https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}&status=${name}-${day}`;
 
-  // deaktivujeme tlačítko, aby se nedalo klikat víckrát
   const button = input.parentElement.parentElement.querySelector('button');
   button.disabled = true;
   button.textContent = "Ukládám...";
@@ -186,7 +187,7 @@ function save(name, day) {
   fetch(url)
     .then(r => r.text())
     .then(id => {
-      if (id != "0") {
+      if (id && id !== "0") {
         document.getElementById('msg').innerText = messages[Math.floor(Math.random() * messages.length)];
         setTimeout(() => document.getElementById('msg').innerText = "---", 5000);
         setTimeout(loadAll, 1500);
@@ -213,20 +214,18 @@ function loadAll() {
       const lukasData = [];
       const martinData = [];
 
-      // nejprve naplníme inputy – bereme nejnovější hodnotu pro každý den
       [...data.feeds].reverse().forEach(feed => {
         if (feed.status && !used.has(feed.status)) {
           used.add(feed.status);
           const [n, day] = feed.status.split("-");
           const el = document.getElementById(n + day);
           const val = n === "lukas" ? feed.field1 : feed.field2;
-          if (el && val) el.value = val;
+          if (el && val != null) el.value = val;
         }
       });
 
-      // pak data pro graf (chronologicky od starých k novým)
       data.feeds.forEach(feed => {
-        labels.push(feed.created_at.slice(5, 10)); // MM-DD
+        labels.push(feed.created_at.slice(5, 10));
         lukasData.push(feed.field1 ? Number(feed.field1) : null);
         martinData.push(feed.field2 ? Number(feed.field2) : null);
       });
@@ -237,12 +236,11 @@ function loadAll() {
 
 function drawChart(labels, lukas, martin) {
   if (chartInstance) chartInstance.destroy();
-
   const ctx = document.getElementById('chart').getContext('2d');
   chartInstance = new Chart(ctx, {
     type: "line",
     data: {
-      labels: labels,
+      labels,
       datasets: [
         {
           label: "Lukáš",
@@ -282,6 +280,8 @@ function drawChart(labels, lukas, martin) {
 }
 
 loadAll();
+
+}); // DOMContentLoaded
 </script>
 </body>
 </html>
