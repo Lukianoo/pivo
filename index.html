@@ -1,10 +1,64 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <title>Odpočet k prvnímu pivu 🍺</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Odpočet k prvnímu pivu 🍺</title>
+
+<style>
+body {
+    background: linear-gradient(45deg, #ffcc00, #ff6600);
+    font-family: Comic Sans MS, cursive;
+    text-align: center;
+}
+
+#countdown h1 {
+    font-size: 80px;
+    margin: 20px;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.weights {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+
+.person {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    width: 260px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    animation: wobble 3s infinite;
+}
+
+@keyframes wobble {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    75% { transform: rotate(-1deg); }
+}
+
+img {
+    width: 150px;
+    border-radius: 50%;
+}
+
+input, button {
+    display: block;
+    margin: 8px auto;
+    font-size: 16px;
+}
+</style>
 </head>
+
 <body>
 
 <div id="countdown">
@@ -34,54 +88,16 @@
 
 </div>
 
-<script src="script.js"></script>
-</body>
-</html>
+<script>
+/*************************************************
+ * 🔑 THINGSPEAK – DOPLŇ TADY
+ *************************************************/
+const CHANNEL_ID = "SEM_DEJ_CHANNEL_ID";      // např. 1234567
+const WRITE_API_KEY = "SEM_DEJ_WRITE_API_KEY"; // dlouhý řetězec
 
-
-body {
-    background: linear-gradient(45deg, #ffcc00, #ff6600);
-    font-family: Comic Sans MS, cursive;
-    text-align: center;
-}
-
-#countdown h1 {
-    font-size: 80px;
-    margin: 20px;
-}
-
-.weights {
-    display: flex;
-    justify-content: center;
-    gap: 40px;
-    margin-top: 40px;
-}
-
-.person {
-    background: white;
-    padding: 20px;
-    border-radius: 20px;
-    width: 260px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
-}
-
-img {
-    width: 150px;
-    border-radius: 50%;
-}
-
-input {
-    display: block;
-    margin: 8px auto;
-}
-
-
-
-/************ THINGSPEAK ************/
-const CHANNEL_ID = "SEM_DEJ_CHANNEL_ID";
-const WRITE_API_KEY = "SEM_DEJ_WRITE_API_KEY";
-
-/************ ODPORČET ************/
+/*************************************************
+ * ⏱ ODPORČET DO KONCE ÚNORA
+ *************************************************/
 function getEndOfFebruary() {
     const now = new Date();
     let year = now.getFullYear();
@@ -97,11 +113,14 @@ setInterval(() => {
     const h = Math.floor(diff / 1000 / 60 / 60);
     const m = Math.floor(diff / 1000 / 60) % 60;
     const s = Math.floor(diff / 1000) % 60;
+
     document.getElementById("time").innerText =
-        `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+        `${h}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
 }, 1000);
 
-/************ ULOŽENÍ ************/
+/*************************************************
+ * 💾 ULOŽENÍ VÁHY (KAŽDÝ DEN = NOVÝ ZÁZNAM)
+ *************************************************/
 function saveWeight(name) {
     const weight = document.getElementById(name + "Weight").value;
     const date = document.getElementById(name + "Date").value;
@@ -113,7 +132,6 @@ function saveWeight(name) {
 
     const field = name === "lukas" ? 1 : 2;
 
-    // datum pošleme jako text (ThingSpeak ho uloží)
     fetch(
         `https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${weight}&status=${name}-${date}`
     );
@@ -121,3 +139,7 @@ function saveWeight(name) {
     document.getElementById(name + "Saved").innerText =
         `Uloženo ${date}: ${weight} kg ⚖️`;
 }
+</script>
+
+</body>
+</html>
