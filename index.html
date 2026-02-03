@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Odpočet k prvnímu pivu 🍺</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ODPORČET -->
+    <div id="countdown">
+        <h1 id="time">00:00:00</h1>
+        <p>🍺 Odpočet k prvnímu pivu 🍺</p>
+    </div>
+
+    <!-- VÁHY -->
+    <div class="weights">
+
+        <div class="person">
+            <h2>Lukáš</h2>
+            <img src="https://placekitten.com/200/200">
+            <input type="number" id="lukasWeight" placeholder="Váha (kg)">
+            <button onclick="saveWeight('lukas')">Uložit</button>
+            <p id="lukasSaved">---</p>
+        </div>
+
+        <div class="person">
+            <h2>Martin</h2>
+            <img src="https://placebear.com/200/200">
+            <input type="number" id="martinWeight" placeholder="Váha (kg)">
+            <button onclick="saveWeight('martin')">Uložit</button>
+            <p id="martinSaved">---</p>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+body {
+    background: linear-gradient(45deg, #ffcc00, #ff6600);
+    font-family: Comic Sans MS, cursive;
+    text-align: center;
+}
+
+#countdown h1 {
+    font-size: 80px;
+    margin: 20px;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.weights {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 40px;
+}
+
+.person {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    width: 250px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    animation: wobble 3s infinite;
+}
+
+@keyframes wobble {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    75% { transform: rotate(-1deg); }
+}
+
+img {
+    width: 150px;
+    border-radius: 50%;
+}
+
+button {
+    margin-top: 10px;
+    padding: 5px 15px;
+    font-size: 16px;
+}
+
+/*************************************************
+ * 🔑 THINGSPEAK NASTAVENÍ
+ * SEM DOPLŇ SVÉ ÚDAJE Z THINGSPEAK:
+ *************************************************/
+
+// 👉 Channel ID (číslo)
+const CHANNEL_ID = "SEM_DEJ_CHANNEL_ID";
+
+// 👉 Write API Key (dlouhý řetězec)
+const WRITE_API_KEY = "SEM_DEJ_WRITE_API_KEY";
+
+/*************************************************
+ * ⏱ ODPORČET DO KONCE ÚNORA
+ *************************************************/
+function getEndOfFebruary() {
+    const now = new Date();
+    let year = now.getFullYear();
+    let end = new Date(year, 2, 0, 23, 59, 59); // konec února
+
+    if (now > end) {
+        end = new Date(year + 1, 2, 0, 23, 59, 59);
+    }
+    return end;
+}
+
+const endDate = getEndOfFebruary();
+
+function updateCountdown() {
+    const now = new Date();
+    const diff = endDate - now;
+
+    const hours = Math.floor(diff / 1000 / 60 / 60);
+    const minutes = Math.floor(diff / 1000 / 60) % 60;
+    const seconds = Math.floor(diff / 1000) % 60;
+
+    document.getElementById("time").innerText =
+        `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+/*************************************************
+ * 💾 ULOŽENÍ VÁHY NA THINGSPEAK
+ *************************************************/
+function saveWeight(name) {
+    const value = document.getElementById(name + "Weight").value;
+
+    if (!value) {
+        alert("Zadej váhu 😄");
+        return;
+    }
+
+    // field1 = Lukáš, field2 = Martin
+    const field = name === "lukas" ? 1 : 2;
+
+    fetch(`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}`)
+        .then(() => {
+            alert("Váha uložena 🍺");
+            loadWeights();
+        });
+}
+
+/*************************************************
+ * 👀 NAČTENÍ POSLEDNÍCH VÁH
+ *************************************************/
+function loadWeights() {
+    fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.field1) {
+                document.getElementById("lukasSaved").innerText =
+                    "Uloženo: " + data.field1 + " kg ⚖️";
+            }
+            if (data.field2) {
+                document.getElementById("martinSaved").innerText =
+                    "Uloženo: " + data.field2 + " kg ⚖️";
+            }
+        });
+}
+
+// načti hned po otevření stránky
+loadWeights();
