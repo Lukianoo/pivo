@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /************ THINGSPEAK ************/
 const CHANNEL_ID="3249143";
 const WRITE_API_KEY="H753ZAUO7U3LT3J6";
-const READ_API_KEY="1RDF4Q2Y54BGZSNB"; // tvůj Read API Key
+const READ_API_KEY="1RDF4Q2Y54BGZSNB";
 
 /************ SPROSTÉ HLAŠKY ************/
 const messages=[
@@ -216,29 +216,23 @@ function loadAll() {
   fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=300`)
     .then(r => r.json())
     .then(data => {
-      const used = new Set();
       const labels = [];
       const lukasData = [];
       const martinData = [];
 
-      // naplnění inputů jen únor
-      [...data.feeds].reverse().forEach(feed => {
-        if (feed.status && !used.has(feed.status)) {
-          const [n, day] = feed.status.split("-");
-          const dayNum = parseInt(day, 10);
-          if (dayNum < 1 || dayNum > lastDayFeb) return;
-          used.add(feed.status);
-          const el = document.getElementById(n + dayNum);
-          const val = n === "lukas" ? feed.field1 : feed.field2;
-          if (el && val != null) el.value = val;
-        }
-      });
-
-      // připrava dat pro graf
+      // naplnění inputů a příprava grafu
       for (let d = 1; d <= lastDayFeb; d++) {
         labels.push(d + ".2");
         const lukInput = document.getElementById("lukas" + d);
         const marInput = document.getElementById("martin" + d);
+
+        // najdeme nejnovější feed pro tento den
+        const lukFeed = [...data.feeds].reverse().find(f => f.status === `lukas-${d}`);
+        const marFeed = [...data.feeds].reverse().find(f => f.status === `martin-${d}`);
+
+        if (lukFeed && lukFeed.field1 != null) lukInput.value = lukFeed.field1;
+        if (marFeed && marFeed.field2 != null) marInput.value = marFeed.field2;
+
         lukasData.push(lukInput.value ? Number(lukInput.value) : null);
         martinData.push(marInput.value ? Number(marInput.value) : null);
       }
