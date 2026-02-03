@@ -17,6 +17,7 @@ body{
     margin:auto;
     padding:15px;
     text-align:center;
+    overflow-x:hidden;
 }
 h1{font-size:48px;margin:20px 0}
 h2{margin-top:40px}
@@ -82,12 +83,12 @@ button:hover{background:#ff7700}
 canvas{
     width:100%!important;
     max-width:1000px;
+    height:400px; /* pevná výška */
     background:white;
     border-radius:15px;
     padding:20px;
     box-shadow:0 4px 15px rgba(0,0,0,0.2);
     box-sizing:border-box;
-    height:400px;
 }
 </style>
 </head>
@@ -103,6 +104,7 @@ canvas{
 <h2>📈 Vývoj váhy – únor</h2>
 <canvas id="chart"></canvas>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -124,21 +126,18 @@ const messages=[
 /************ ODPočet ************/
 const year = new Date().getFullYear();
 const lastDayFeb = new Date(year, 2, 0).getDate();
-const endDate = new Date(year, 1, lastDayFeb, 23, 59, 59); // poslední den února 23:59:59
+const endDate = new Date(year, 1, lastDayFeb, 23, 59, 59);
 
 function updateCountdown() {
   const now = new Date();
   const diff = endDate - now;
-
   if (diff <= 0) {
     document.getElementById('time').innerText = "ČAS VYPRŠEL! 🍺🍺🍺";
     return;
   }
-
   const hours = Math.floor(diff / 36e5);
   const minutes = Math.floor((diff % 36e5) / 6e4);
   const seconds = Math.floor((diff % 6e4) / 1e3);
-
   document.getElementById('time').innerText =
     `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
 }
@@ -171,13 +170,11 @@ makeTable("martinTable", "martin");
 window.save = function(name, day) {
   const input = document.getElementById(name + day);
   const value = input.value.trim();
-
   if (!value || isNaN(value) || value < 40 || value > 200) {
     alert("Zadej reálnou váhu v kg (40–200)");
     input.focus();
     return;
   }
-
   const field = name === "lukas" ? 1 : 2;
   const url = `https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}&status=${name}-${day}`;
 
@@ -192,9 +189,7 @@ window.save = function(name, day) {
         document.getElementById('msg').innerText = messages[Math.floor(Math.random() * messages.length)];
         setTimeout(() => document.getElementById('msg').innerText = "---", 5000);
         setTimeout(loadAll, 1500);
-      } else {
-        alert("Chyba při ukládání – zkuste to znovu");
-      }
+      } else alert("Chyba při ukládání – zkuste to znovu");
     })
     .catch(() => alert("Nepodařilo se spojit s ThingSpeak"))
     .finally(() => {
@@ -215,11 +210,12 @@ function loadAll() {
       const lukasData = [];
       const martinData = [];
 
+      // naplnění inputů jen únor
       [...data.feeds].reverse().forEach(feed => {
         if (feed.status && !used.has(feed.status)) {
           const [n, day] = feed.status.split("-");
           const dayNum = parseInt(day, 10);
-          if (dayNum < 1 || dayNum > lastDayFeb) return; // jen únor
+          if (dayNum < 1 || dayNum > lastDayFeb) return;
           used.add(feed.status);
           const el = document.getElementById(n + dayNum);
           const val = n === "lukas" ? feed.field1 : feed.field2;
@@ -227,6 +223,7 @@ function loadAll() {
         }
       });
 
+      // připrava dat pro graf
       for (let d = 1; d <= lastDayFeb; d++) {
         labels.push(d + ".2");
         const lukInput = document.getElementById("lukas" + d);
