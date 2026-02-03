@@ -87,6 +87,7 @@ canvas{
     padding:20px;
     box-shadow:0 4px 15px rgba(0,0,0,0.2);
     box-sizing:border-box;
+    height:400px;
 }
 </style>
 </head>
@@ -99,7 +100,7 @@ canvas{
 <div class="table-box"><h2>Martin</h2><table id="martinTable"></table></div>
 </div>
 <div class="message" id="msg">---</div>
-<h2>📈 Vývoj váhy</h2>
+<h2>📈 Vývoj váhy – únor</h2>
 <canvas id="chart"></canvas>
 </div>
 <script>
@@ -122,7 +123,8 @@ const messages=[
 
 /************ ODPočet ************/
 const year = new Date().getFullYear();
-const endDate = new Date(year, 1, new Date(year, 2, 0).getDate(), 23, 59, 59); // poslední den února 23:59:59
+const lastDayFeb = new Date(year, 2, 0).getDate();
+const endDate = new Date(year, 1, lastDayFeb, 23, 59, 59); // poslední den února 23:59:59
 
 function updateCountdown() {
   const now = new Date();
@@ -145,13 +147,12 @@ setInterval(updateCountdown, 1000);
 updateCountdown();
 
 /************ TABULKY ************/
-const daysInFeb = new Date(year, 2, 0).getDate();
 const today = new Date().getDate();
 
 function makeTable(id, name) {
   const table = document.getElementById(id);
   let html = `<tr><th>Den</th><th>Váha (kg)</th><th></th></tr>`;
-  for (let d = 1; d <= daysInFeb; d++) {
+  for (let d = 1; d <= lastDayFeb; d++) {
     const isToday = d === today;
     html += `
       <tr class="${isToday ? 'today' : ''}">
@@ -202,7 +203,7 @@ window.save = function(name, day) {
     });
 }
 
-/************ NAČTENÍ + GRAF ************/
+/************ NAČTENÍ + GRAF (jen únor) ************/
 let chartInstance = null;
 
 function loadAll() {
@@ -216,19 +217,23 @@ function loadAll() {
 
       [...data.feeds].reverse().forEach(feed => {
         if (feed.status && !used.has(feed.status)) {
-          used.add(feed.status);
           const [n, day] = feed.status.split("-");
-          const el = document.getElementById(n + day);
+          const dayNum = parseInt(day, 10);
+          if (dayNum < 1 || dayNum > lastDayFeb) return; // jen únor
+          used.add(feed.status);
+          const el = document.getElementById(n + dayNum);
           const val = n === "lukas" ? feed.field1 : feed.field2;
           if (el && val != null) el.value = val;
         }
       });
 
-      data.feeds.forEach(feed => {
-        labels.push(feed.created_at.slice(5, 10));
-        lukasData.push(feed.field1 ? Number(feed.field1) : null);
-        martinData.push(feed.field2 ? Number(feed.field2) : null);
-      });
+      for (let d = 1; d <= lastDayFeb; d++) {
+        labels.push(d + ".2");
+        const lukInput = document.getElementById("lukas" + d);
+        const marInput = document.getElementById("martin" + d);
+        lukasData.push(lukInput.value ? Number(lukInput.value) : null);
+        martinData.push(marInput.value ? Number(marInput.value) : null);
+      }
 
       drawChart(labels, lukasData, martinData);
     });
@@ -248,7 +253,8 @@ function drawChart(labels, lukas, martin) {
           borderColor: "#ff4444",
           backgroundColor: "rgba(255,68,68,0.2)",
           tension: 0.3,
-          fill: false
+          fill: false,
+          spanGaps: true
         },
         {
           label: "Martin",
@@ -256,7 +262,8 @@ function drawChart(labels, lukas, martin) {
           borderColor: "#4488ff",
           backgroundColor: "rgba(68,136,255,0.2)",
           tension: 0.3,
-          fill: false
+          fill: false,
+          spanGaps: true
         }
       ]
     },
@@ -264,17 +271,10 @@ function drawChart(labels, lukas, martin) {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: {
-          beginAtZero: false,
-          title: { display: true, text: "Váha (kg)" }
-        },
-        x: {
-          title: { display: true, text: "Den (MM-DD)" }
-        }
+        y: { beginAtZero: false, title: { display: true, text: "Váha (kg)" } },
+        x: { title: { display: true, text: "Den (únor)" } }
       },
-      plugins: {
-        legend: { position: "top" }
-      }
+      plugins: { legend: { position: "top" } }
     }
   });
 }
