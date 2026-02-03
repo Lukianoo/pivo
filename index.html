@@ -4,77 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Odpočet k prvnímu pivu 🍺</title>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-    background: linear-gradient(45deg, #ffcc00, #ff6600);
-    font-family: Comic Sans MS, cursive;
-    margin: 0;
+body{
+    background:linear-gradient(45deg,#ffcc00,#ff6600);
+    font-family:Comic Sans MS,cursive;
+    margin:0;
 }
-
-.container {
-    max-width: 1200px;
-    margin: auto;
-    padding: 15px;
-    text-align: center;
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:15px;
+    text-align:center;
 }
-
-h1 { font-size: 48px; }
-
-.tables {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
+h1{font-size:48px}
+.tables{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+    justify-content:center;
 }
-
-.table-box {
-    width: 100%;
-    max-width: 520px;
+.table-box{max-width:520px;width:100%}
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:15px;
+    overflow:hidden;
 }
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
+th,td{
+    border:1px solid #ccc;
+    padding:6px;
+    font-size:14px;
 }
-
-th, td {
-    border: 1px solid #ccc;
-    padding: 6px;
-    font-size: 14px;
+.today{
+    background:#ffe066;
+    font-weight:bold;
 }
-
-input {
-    width: 100%;
-    font-size: 16px;
+input{width:100%;font-size:16px}
+button{padding:6px 12px;font-size:16px}
+.message{
+    margin:20px auto;
+    padding:15px;
+    background:white;
+    border-radius:15px;
+    font-size:18px;
+    max-width:900px;
 }
-
-button {
-    padding: 6px 12px;
-    font-size: 16px;
-}
-
-.message {
-    margin: 20px auto;
-    padding: 15px;
-    background: white;
-    border-radius: 15px;
-    font-size: 18px;
-    max-width: 900px;
-}
-
-canvas {
-    width: 100% !important;
-    max-width: 1000px;
-    height: auto !important;
-    background: white;
-    border-radius: 15px;
-    padding: 10px;
+canvas{
+    width:100%!important;
+    max-width:1000px;
+    background:white;
+    border-radius:15px;
+    padding:10px;
 }
 </style>
 </head>
@@ -86,112 +69,111 @@ canvas {
 <p>🍺 Odpočet k prvnímu pivu 🍺</p>
 
 <div class="tables">
-    <div class="table-box">
-        <h2>Lukáš</h2>
-        <table id="lukasTable"></table>
-    </div>
-    <div class="table-box">
-        <h2>Martin</h2>
-        <table id="martinTable"></table>
-    </div>
+<div class="table-box"><h2>Lukáš</h2><table id="lukasTable"></table></div>
+<div class="table-box"><h2>Martin</h2><table id="martinTable"></table></div>
 </div>
 
 <div class="message" id="msg">---</div>
 
 <h2>📈 Vývoj váhy</h2>
-<canvas id="weightChart"></canvas>
+<canvas id="chart"></canvas>
 
 </div>
 
 <script>
 /************ THINGSPEAK ************/
-const CHANNEL_ID = "3249143";
-const WRITE_API_KEY = "H753ZAUO7U3LT3J6";
+const CHANNEL_ID="3249143";
+const WRITE_API_KEY="H753ZAUO7U3LT3J6";
 
-/************ HLAŠKY ************/
-const messages = [
-    "Forma na léto se pomalu rýsuje 😎",
-    "To pivo za to stálo 🍺",
-    "Trenér právě brečí 😈",
-    "Zimní objem pokračuje 🐷",
-    "Výživový poradce omdlel 🤡",
-    "Aspoň nejsi kost a kůže 😅"
+/************ SPROSTÉ HLAŠKY ************/
+const messages=[
+ "Ty vole, zase nahoru? 🤦‍♂️",
+ "Pivo tě má radši než činky 🍺",
+ "Tohle už není forma, to je koule 🐷",
+ "Trenér by ti dal facku 😈",
+ "Sežral jsi v noci ledničku?",
+ "Aspoň je víc co milovat ❤️‍🔥",
+ "Jestli tohle je dieta, tak jsem papež 🤡"
 ];
 
 /************ ODPORČET ************/
-function endOfFebruary() {
-    const y = new Date().getFullYear();
-    return new Date(y, 2, 0, 23, 59, 59);
+function endOfFebruary(){
+ const y=new Date().getFullYear();
+ return new Date(y,2,0,23,59,59);
 }
-setInterval(() => {
-    const d = endOfFebruary() - new Date();
-    document.getElementById("time").innerText =
-        `${Math.floor(d/36e5)}:${Math.floor(d/6e4)%60}:${Math.floor(d/1e3)%60}`;
-}, 1000);
+setInterval(()=>{
+ const d=endOfFebruary()-new Date();
+ time.innerText=
+ `${Math.floor(d/36e5)}:${Math.floor(d/6e4)%60}:${Math.floor(d/1e3)%60}`;
+},1000);
 
 /************ TABULKY ************/
-function makeTable(id, name) {
-    const t = document.getElementById(id);
-    t.innerHTML = "<tr><th>Den</th><th>Váha</th><th></th></tr>";
-    for (let d = 1; d <= 29; d++) {
-        t.innerHTML += `
-        <tr>
-            <td>${d}.2.</td>
-            <td><input type="number" id="${name}${d}"></td>
-            <td><button onclick="save('${name}',${d})">✔</button></td>
-        </tr>`;
-    }
+const today=new Date().getDate();
+
+function makeTable(id,name){
+ const t=document.getElementById(id);
+ t.innerHTML="<tr><th>Den</th><th>Váha</th><th></th></tr>";
+ for(let d=1;d<=29;d++){
+  t.innerHTML+=`
+  <tr class="${d===today?'today':''}">
+   <td>${d}.2. ${d===today?'🍺':''}</td>
+   <td><input type="number" id="${name}${d}"></td>
+   <td><button onclick="save('${name}',${d})">✔</button></td>
+  </tr>`;
+ }
 }
 makeTable("lukasTable","lukas");
 makeTable("martinTable","martin");
 
 /************ ULOŽENÍ ************/
-function save(name, day) {
-    const val = document.getElementById(name+day).value;
-    if (!val) return alert("Zadej váhu");
-    const field = name === "lukas" ? 1 : 2;
-
-    fetch(`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${val}&status=${name}-${day}`);
-
-    document.getElementById("msg").innerText =
-        messages[Math.floor(Math.random()*messages.length)];
-
-    loadAll();
+function save(name,day){
+ const v=document.getElementById(name+day).value;
+ if(!v)return alert("Zadej váhu");
+ const f=name==="lukas"?1:2;
+ fetch(`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${f}=${v}&status=${name}-${day}`);
+ msg.innerText=messages[Math.floor(Math.random()*messages.length)];
+ setTimeout(loadAll,800);
 }
 
-/************ NAČTENÍ DAT ************/
-function loadAll() {
-    fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=100`)
-    .then(r=>r.json())
-    .then(d=>{
-        const labels=[], l=[], m=[];
-        d.feeds.forEach(f=>{
-            if(f.status){
-                const [name,day]=f.status.split("-");
-                const el=document.getElementById(name+day);
-                if(el && f[`field${name==="lukas"?1:2}`]){
-                    el.value=f[`field${name==="lukas"?1:2}`];
-                }
-            }
-            labels.push(f.created_at.slice(5,10));
-            l.push(f.field1); m.push(f.field2);
-        });
-        drawChart(labels,l,m);
-    });
+/************ NAČTENÍ + OBNOVA ************/
+let chart;
+function loadAll(){
+ fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=150`)
+ .then(r=>r.json())
+ .then(d=>{
+  const used=new Set();
+  const labels=[],l=[],m=[];
+  [...d.feeds].reverse().forEach(f=>{
+   if(f.status && !used.has(f.status)){
+    used.add(f.status);
+    const [n,day]=f.status.split("-");
+    const el=document.getElementById(n+day);
+    const field=n==="lukas"?f.field1:f.field2;
+    if(el && field) el.value=field;
+   }
+  });
+  d.feeds.forEach(f=>{
+   labels.push(f.created_at.slice(5,10));
+   l.push(f.field1?Number(f.field1):null);
+   m.push(f.field2?Number(f.field2):null);
+  });
+  drawChart(labels,l,m);
+ });
 }
 
 /************ GRAF ************/
-let chart;
 function drawChart(labels,lukas,martin){
-    if(chart) chart.destroy();
-    chart=new Chart(weightChart,{
-        type:"line",
-        data:{labels,
-            datasets:[
-                {label:"Lukáš",data:lukas},
-                {label:"Martin",data:martin}
-            ]}
-    });
+ if(chart)chart.destroy();
+ chart=new Chart(chart,{
+  type:"line",
+  data:{
+   labels,
+   datasets:[
+    {label:"Lukáš",data:lukas},
+    {label:"Martin",data:martin}
+   ]
+  }
+ });
 }
 
 loadAll();
