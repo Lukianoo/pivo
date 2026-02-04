@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Odpočet k prvnímu pivu 🍺</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body{
     background:linear-gradient(45deg,#ffcc00,#ff6600);
-    font-family:Comic Sans MS,cursive;
+    font-family:"Comic Sans MS", cursive;
     margin:0;
     color:#333;
 }
@@ -70,6 +72,7 @@ button{
     cursor:pointer;
 }
 button:hover{background:#ff7700}
+button:disabled{opacity:0.6;cursor:not-allowed}
 .message{
     margin:30px auto;
     padding:20px;
@@ -98,165 +101,208 @@ canvas{
 }
 </style>
 </head>
+
 <body>
 <div class="container">
-<h1 id="time">00:00:00</h1>
-<p style="font-size:24px">🍺 Odpočet k prvnímu pivu 🍺</p>
+    <h1 id="time">00:00:00</h1>
+    <p style="font-size:24px">🍺 Odpočet k prvnímu pivu 🍺</p>
 
-<div class="tables">
-<div class="table-box"><h2>Lukáš</h2><table id="lukasTable"></table></div>
-<div class="table-box"><h2>Martin</h2><table id="martinTable"></table></div>
-</div>
+    <div class="tables">
+        <div class="table-box">
+            <h2>Lukáš</h2>
+            <table id="lukasTable"></table>
+        </div>
+        <div class="table-box">
+            <h2>Martin</h2>
+            <table id="martinTable"></table>
+        </div>
+    </div>
 
-<div class="message" id="msg">---</div>
+    <div class="message" id="msg">---</div>
 
-<h2>📈 Vývoj váhy – únor</h2>
-<div class="chart-container">
-  <canvas id="chart"></canvas>
+    <h2>📈 Vývoj váhy – únor</h2>
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
 
-const CHANNEL_ID="3249143";
-const WRITE_API_KEY="H753ZAUO7U3LT3J6";
-const READ_API_KEY="1RDF4Q2Y54BGZSNB";
+const CHANNEL_ID = "3249143";
+const WRITE_API_KEY = "H753ZAUO7U3LT3J6";
+const READ_API_KEY  = "1RDF4Q2Y54BGZSNB";
 
-const messages=[
- "Ty vole, zase nahoru? 🤦‍♂️",
- "Pivo tě má radši než činky 🍺",
- "Tohle už není forma, to je koule 🐷",
- "Trenér by ti dal facku 😈",
- "Sežral jsi v noci ledničku?",
- "Aspoň je víc co milovat ❤️‍🔥",
- "Jestli tohle je dieta, tak jsem papež 🤡"
+const MONTH_INDEX = 1; // únor (0 = leden)
+const year = new Date().getFullYear();
+const lastDayFeb = new Date(year, MONTH_INDEX + 1, 0).getDate();
+const today = new Date().getDate();
+const endDate = new Date(year, MONTH_INDEX, lastDayFeb, 23, 59, 59);
+
+const messages = [
+    "Ty vole, zase nahoru? 🤦‍♂️",
+    "Pivo tě má radši než činky 🍺",
+    "Tohle už není forma, to je koule 🐷",
+    "Trenér by ti dal facku 😈",
+    "Sežral jsi v noci ledničku?",
+    "Aspoň je víc co milovat ❤️‍🔥",
+    "Jestli tohle je dieta, tak jsem papež 🤡"
 ];
 
-const year = new Date().getFullYear();
-const lastDayFeb = new Date(year,2,0).getDate();
-const today = new Date().getDate();
-const endDate = new Date(year,1,lastDayFeb,23,59,59);
-
+// ===== ODPOČET =====
 function updateCountdown(){
-  const now = new Date();
-  const diff = endDate - now;
-  if(diff <=0){
-    document.getElementById('time').innerText="ČAS VYPRŠEL! 🍺🍺🍺";
-    return;
-  }
-  const h = Math.floor(diff/36e5);
-  const m = Math.floor((diff%36e5)/6e4);
-  const s = Math.floor((diff%6e4)/1e3);
-  document.getElementById('time').innerText=
-    `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    const diff = endDate - new Date();
+    const el = document.getElementById("time");
+
+    if(diff <= 0){
+        el.innerText = "ČAS VYPRŠEL! 🍺🍺🍺";
+        return;
+    }
+
+    const h = Math.floor(diff / 36e5);
+    const m = Math.floor((diff % 36e5) / 6e4);
+    const s = Math.floor((diff % 6e4) / 1e3);
+
+    el.innerText =
+        `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
 }
-setInterval(updateCountdown,1000);
+setInterval(updateCountdown, 1000);
 updateCountdown();
 
-// Tabulka
-function makeTable(id,name){
-  const table=document.getElementById(id);
-  let html=`<tr><th>Den</th><th>Váha (kg)</th><th></th></tr>`;
-  for(let d=1; d<=lastDayFeb; d++){
-    const isToday=d===today;
-    html+=`<tr class="${isToday?'today':''}">
-      <td>${d}.2.${isToday?' (dnes) 🍺':''}</td>
-      <td><input type="number" step="0.1" id="${name}${d}" placeholder="?.?"></td>
-      <td><button onclick="save('${name}',${d})">✔ Uložit</button></td>
-    </tr>`;
-  }
-  table.innerHTML=html;
+// ===== TABULKY =====
+function makeTable(id, name){
+    const table = document.getElementById(id);
+    let html = `<tr><th>Den</th><th>Váha (kg)</th><th></th></tr>`;
+
+    for(let d = 1; d <= lastDayFeb; d++){
+        const isToday = d === today;
+        html += `
+        <tr class="${isToday ? "today" : ""}">
+            <td>${d}.2.${isToday ? " (dnes) 🍺" : ""}</td>
+            <td><input type="number" step="0.1" id="${name}${d}" placeholder="?.?"></td>
+            <td><button onclick="save('${name}',${d})">✔ Uložit</button></td>
+        </tr>`;
+    }
+    table.innerHTML = html;
 }
 
-makeTable("lukasTable","lukas");
-makeTable("martinTable","martin");
+makeTable("lukasTable", "lukas");
+makeTable("martinTable", "martin");
 
-// Uložení
-window.save=function(name,day){
-  const input=document.getElementById(name+day);
-  const value=input.value.trim();
-  if(!value || isNaN(value) || value<40 || value>200){
-    alert("Zadej reálnou váhu v kg (40–200)");
-    input.focus();
-    return;
-  }
-  const field=name==="lukas"?1:2;
-  const url=`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}`;
-  const button=input.parentElement.parentElement.querySelector('button');
-  button.disabled=true;
-  button.textContent="Ukládám...";
-  fetch(url).then(r=>r.text()).then(id=>{
-    if(id && id!=="0"){
-      document.getElementById('msg').innerText=messages[Math.floor(Math.random()*messages.length)];
-      setTimeout(()=>document.getElementById('msg').innerText="---",5000);
-      setTimeout(loadAll,1500);
-    } else alert("Chyba při ukládání – zkuste to znovu");
-  }).catch(()=>alert("Nepodařilo se spojit s ThingSpeak"))
-  .finally(()=>{button.disabled=false; button.textContent="✔ Uložit";});
-}
+// ===== ULOŽENÍ =====
+window.save = function(name, day){
+    const input = document.getElementById(name + day);
+    const value = input.value.trim();
 
-// Načtení hodnot
-let chartInstance=null;
+    if(!value || isNaN(value) || value < 40 || value > 200){
+        alert("Zadej reálnou váhu v kg (40–200)");
+        input.focus();
+        return;
+    }
+
+    const field = name === "lukas" ? 1 : 2;
+    const url = `https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}`;
+    const button = input.closest("tr").querySelector("button");
+
+    button.disabled = true;
+    button.textContent = "Ukládám...";
+
+    fetch(url)
+        .then(r => r.text())
+        .then(id => {
+            if(id && id !== "0"){
+                document.getElementById("msg").innerText =
+                    messages[Math.floor(Math.random() * messages.length)];
+                setTimeout(() => document.getElementById("msg").innerText = "---", 5000);
+                setTimeout(loadAll, 1200);
+            } else {
+                alert("Chyba při ukládání");
+            }
+        })
+        .catch(() => alert("Nepodařilo se spojit s ThingSpeak"))
+        .finally(() => {
+            button.disabled = false;
+            button.textContent = "✔ Uložit";
+        });
+};
+
+// ===== NAČTENÍ + GRAF =====
+let chartInstance = null;
+
 function loadAll(){
-  fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=300`)
-  .then(r=>r.json())
-  .then(data=>{
-    const labels=[];
-    const lukasData=[];
-    const martinData=[];
+    fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=300`)
+        .then(r => r.json())
+        .then(data => {
+            if(!data.feeds) return;
 
-    for(let d=1; d<=lastDayFeb; d++){
-      labels.push(d+".2");
+            const labels = [];
+            const lukasData = [];
+            const martinData = [];
 
-      const lukInput=document.getElementById("lukas"+d);
-      const marInput=document.getElementById("martin"+d);
+            for(let d = 1; d <= lastDayFeb; d++){
+                labels.push(d + ".2");
 
-      let lukasVal = null;
-      let martinVal = null;
+                let lv = null, mv = null;
 
-      // 🔥 projdeme feedy odzadu
-      for(let i=data.feeds.length-1; i>=0; i--){
-        const f = data.feeds[i];
-        const date = new Date(f.created_at);
+                for(let i = data.feeds.length - 1; i >= 0; i--){
+                    const f = data.feeds[i];
+                    const dt = new Date(f.created_at);
 
-        if(date.getMonth()===1 && date.getDate()===d){
-          if(lukasVal===null && f.field1!=null) lukasVal=f.field1;
-          if(martinVal===null && f.field2!=null) martinVal=f.field2;
-          if(lukasVal!==null && martinVal!==null) break;
-        }
-      }
+                    if(dt.getMonth() === MONTH_INDEX && dt.getDate() === d){
+                        if(lv === null && f.field1) lv = f.field1;
+                        if(mv === null && f.field2) mv = f.field2;
+                        if(lv && mv) break;
+                    }
+                }
 
-      if(lukasVal!==null) lukInput.value=lukasVal;
-      if(martinVal!==null) marInput.value=martinVal;
+                if(lv) document.getElementById("lukas" + d).value = lv;
+                if(mv) document.getElementById("martin" + d).value = mv;
 
-      lukasData.push(lukasVal!==null?Number(lukasVal):null);
-      martinData.push(martinVal!==null?Number(martinVal):null);
-    }
+                lukasData.push(lv ? Number(lv) : null);
+                martinData.push(mv ? Number(mv) : null);
+            }
 
-    drawChart(labels,lukasData,martinData);
-  });
+            drawChart(labels, lukasData, martinData);
+        })
+        .catch(() => alert("Chyba při načítání dat"));
 }
 
-// Graf
-function drawChart(labels,lukas,martin){
-  if(chartInstance) chartInstance.destroy();
-  const ctx=document.getElementById('chart').getContext('2d');
-  chartInstance=new Chart(ctx,{
-    type:"line",
-    data:{
-      labels,
-      datasets:[
-        {label:"Lukáš",data:lukas,borderColor:"#ff4444",backgroundColor:"rgba(255,68,68,0.2)",tension:0.3,fill:false,spanGaps:true},
-        {label:"Martin",data:martin,borderColor:"#4488ff",backgroundColor:"rgba(68,136,255,0.2)",tension:0.3,fill:false,spanGaps:true}
-      ]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      scales:{y:{beginAtZero:false,title:{display:true,text:"Váha (kg)"}},x:{title:{display:true,text:"Den (únor)"}}},
-      plugins:{legend:{position:"top"}}
-    }
-  });
+function drawChart(labels, lukas, martin){
+    if(chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(
+        document.getElementById("chart"),
+        {
+            type: "line",
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: "Lukáš",
+                        data: lukas,
+                        borderColor: "#ff4444",
+                        tension: 0.3,
+                        spanGaps: true
+                    },
+                    {
+                        label: "Martin",
+                        data: martin,
+                        borderColor: "#4488ff",
+                        tension: 0.3,
+                        spanGaps: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { title: { display: true, text: "Váha (kg)" } },
+                    x: { title: { display: true, text: "Den (únor)" } }
+                }
+            }
+        }
+    );
 }
 
 loadAll();
