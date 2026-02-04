@@ -204,24 +204,35 @@ function loadAll(){
     const labels=[];
     const lukasData=[];
     const martinData=[];
-    // projdeme všechny dny února
+
     for(let d=1; d<=lastDayFeb; d++){
       labels.push(d+".2");
+
       const lukInput=document.getElementById("lukas"+d);
       const marInput=document.getElementById("martin"+d);
-      // vezmeme **nejnovější hodnotu field1 a field2 pro tento den**
-      const feedsForDay=data.feeds.filter(f=>{
-        const date=new Date(f.created_at);
-        return date.getMonth()===1 && date.getDate()===d; // únor = month 1
-      });
-      if(feedsForDay.length>0){
-        const lastFeed=feedsForDay[feedsForDay.length-1];
-        if(lastFeed.field1!=null) lukInput.value=lastFeed.field1;
-        if(lastFeed.field2!=null) marInput.value=lastFeed.field2;
+
+      let lukasVal = null;
+      let martinVal = null;
+
+      // 🔥 projdeme feedy odzadu
+      for(let i=data.feeds.length-1; i>=0; i--){
+        const f = data.feeds[i];
+        const date = new Date(f.created_at);
+
+        if(date.getMonth()===1 && date.getDate()===d){
+          if(lukasVal===null && f.field1!=null) lukasVal=f.field1;
+          if(martinVal===null && f.field2!=null) martinVal=f.field2;
+          if(lukasVal!==null && martinVal!==null) break;
+        }
       }
-      lukasData.push(lukInput.value?Number(lukInput.value):null);
-      martinData.push(marInput.value?Number(marInput.value):null);
+
+      if(lukasVal!==null) lukInput.value=lukasVal;
+      if(martinVal!==null) marInput.value=martinVal;
+
+      lukasData.push(lukasVal!==null?Number(lukasVal):null);
+      martinData.push(martinVal!==null?Number(martinVal):null);
     }
+
     drawChart(labels,lukasData,martinData);
   });
 }
