@@ -19,7 +19,6 @@ body{
     margin:auto;
     padding:15px;
     text-align:center;
-    overflow-x:hidden;
 }
 h1{font-size:48px;margin:20px 0}
 h2{margin-top:40px}
@@ -29,10 +28,7 @@ h2{margin-top:40px}
     flex-wrap:wrap;
     justify-content:center;
 }
-.table-box{
-    max-width:520px;
-    width:100%;
-}
+.table-box{max-width:520px;width:100%}
 table{
     width:100%;
     border-collapse:collapse;
@@ -46,21 +42,14 @@ th,td{
     padding:12px;
     font-size:16px;
 }
-th{
-    background:#ff9900;
-    color:white;
-}
-.today{
-    background:#ffe066;
-    font-weight:bold;
-}
+th{background:#ff9900;color:white}
+.today{background:#ffe066;font-weight:bold}
 input{
     width:100%;
     padding:10px;
     font-size:16px;
-    box-sizing:border-box;
-    border:1px solid #ccc;
     border-radius:6px;
+    border:1px solid #ccc;
 }
 button{
     padding:10px 16px;
@@ -72,19 +61,31 @@ button{
     cursor:pointer;
 }
 button:hover{background:#ff7700}
-button:disabled{opacity:0.6;cursor:not-allowed}
+button:disabled{opacity:.6;cursor:not-allowed}
+
+/* 🔥 HLÁŠKA + ANIMACE */
 .message{
     margin:30px auto;
     padding:20px;
     background:white;
     border-radius:15px;
-    font-size:20px;
+    font-size:22px;
     max-width:900px;
     box-shadow:0 4px 15px rgba(0,0,0,0.2);
-    min-height:60px;
+    opacity:0;
+    transform:translateY(20px) scale(.95);
+    transition:.4s ease;
 }
+.message.show{
+    opacity:1;
+    transform:translateY(0) scale(1);
+}
+.message.hide{
+    opacity:0;
+    transform:translateY(-20px) scale(.95);
+}
+
 .chart-container{
-    width:100%;
     max-width:1000px;
     height:400px;
     margin:auto;
@@ -92,219 +93,148 @@ button:disabled{opacity:0.6;cursor:not-allowed}
     border-radius:15px;
     padding:20px;
     box-shadow:0 4px 15px rgba(0,0,0,0.2);
-    box-sizing:border-box;
 }
-canvas{
-    width:100%;
-    height:100%;
-    display:block;
-}
+canvas{width:100%;height:100%}
 </style>
 </head>
 
 <body>
 <div class="container">
-    <h1 id="time">00:00:00</h1>
-    <p style="font-size:24px">🍺 Odpočet k prvnímu pivu 🍺</p>
+<h1 id="time">00:00:00</h1>
+<p style="font-size:24px">🍺 Odpočet k prvnímu pivu 🍺</p>
 
-    <div class="tables">
-        <div class="table-box">
-            <h2>Lukáš</h2>
-            <table id="lukasTable"></table>
-        </div>
-        <div class="table-box">
-            <h2>Martin</h2>
-            <table id="martinTable"></table>
-        </div>
-    </div>
+<div class="tables">
+    <div class="table-box"><h2>Lukáš</h2><table id="lukasTable"></table></div>
+    <div class="table-box"><h2>Martin</h2><table id="martinTable"></table></div>
+</div>
 
-    <div class="message" id="msg">---</div>
+<div class="message" id="msg">---</div>
 
-    <h2>📈 Vývoj váhy – únor</h2>
-    <div class="chart-container">
-        <canvas id="chart"></canvas>
-    </div>
+<h2>📈 Vývoj váhy – únor</h2>
+<div class="chart-container">
+    <canvas id="chart"></canvas>
+</div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded",()=>{
 
-const CHANNEL_ID = "3249143";
-const WRITE_API_KEY = "H753ZAUO7U3LT3J6";
-const READ_API_KEY  = "1RDF4Q2Y54BGZSNB";
+const CHANNEL_ID="3249143";
+const WRITE_API_KEY="H753ZAUO7U3LT3J6";
+const READ_API_KEY="1RDF4Q2Y54BGZSNB";
 
-const MONTH_INDEX = 1; // únor (0 = leden)
-const year = new Date().getFullYear();
-const lastDayFeb = new Date(year, MONTH_INDEX + 1, 0).getDate();
-const today = new Date().getDate();
-const endDate = new Date(year, MONTH_INDEX, lastDayFeb, 23, 59, 59);
+const MONTH=1;
+const year=new Date().getFullYear();
+const lastDay=new Date(year,MONTH+1,0).getDate();
+const today=new Date().getDate();
+const endDate=new Date(year,MONTH,lastDay,23,59,59);
 
-const messages = [
-    "Ty vole, zase nahoru? 🤦‍♂️",
-    "Pivo tě má radši než činky 🍺",
-    "Tohle už není forma, to je koule 🐷",
-    "Trenér by ti dal facku 😈",
-    "Sežral jsi v noci ledničku?",
-    "Aspoň je víc co milovat ❤️‍🔥",
-    "Jestli tohle je dieta, tak jsem papež 🤡"
-];
-
-// ===== ODPOČET =====
-function updateCountdown(){
-    const diff = endDate - new Date();
-    const el = document.getElementById("time");
-
-    if(diff <= 0){
-        el.innerText = "ČAS VYPRŠEL! 🍺🍺🍺";
-        return;
-    }
-
-    const h = Math.floor(diff / 36e5);
-    const m = Math.floor((diff % 36e5) / 6e4);
-    const s = Math.floor((diff % 6e4) / 1e3);
-
-    el.innerText =
-        `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
-}
-setInterval(updateCountdown, 1000);
-updateCountdown();
-
-// ===== TABULKY =====
-function makeTable(id, name){
-    const table = document.getElementById(id);
-    let html = `<tr><th>Den</th><th>Váha (kg)</th><th></th></tr>`;
-
-    for(let d = 1; d <= lastDayFeb; d++){
-        const isToday = d === today;
-        html += `
-        <tr class="${isToday ? "today" : ""}">
-            <td>${d}.2.${isToday ? " (dnes) 🍺" : ""}</td>
-            <td><input type="number" step="0.1" id="${name}${d}" placeholder="?.?"></td>
-            <td><button onclick="save('${name}',${d})">✔ Uložit</button></td>
-        </tr>`;
-    }
-    table.innerHTML = html;
-}
-
-makeTable("lukasTable", "lukas");
-makeTable("martinTable", "martin");
-
-// ===== ULOŽENÍ =====
-window.save = function(name, day){
-    const input = document.getElementById(name + day);
-    const value = input.value.trim();
-
-    if(!value || isNaN(value) || value < 40 || value > 200){
-        alert("Zadej reálnou váhu v kg (40–200)");
-        input.focus();
-        return;
-    }
-
-    const field = name === "lukas" ? 1 : 2;
-    const url = `https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}`;
-    const button = input.closest("tr").querySelector("button");
-
-    button.disabled = true;
-    button.textContent = "Ukládám...";
-
-    fetch(url)
-        .then(r => r.text())
-        .then(id => {
-            if(id && id !== "0"){
-                document.getElementById("msg").innerText =
-                    messages[Math.floor(Math.random() * messages.length)];
-                setTimeout(() => document.getElementById("msg").innerText = "---", 5000);
-                setTimeout(loadAll, 1200);
-            } else {
-                alert("Chyba při ukládání");
-            }
-        })
-        .catch(() => alert("Nepodařilo se spojit s ThingSpeak"))
-        .finally(() => {
-            button.disabled = false;
-            button.textContent = "✔ Uložit";
-        });
+/* 🔥 JINÉ HLÁŠKY */
+const messages={
+    lukas:[
+        "Lukáši… tohle ti pivo samo neodpije 🍺",
+        "Forma? Spíš sud 😈",
+        "Aspoň máš pořádně na čem sedět 😏",
+        "Činky brečí v koutě 🤡",
+        "Trenér se právě odhlásil"
+    ],
+    martin:[
+        "Martine, ticho… váha mluví 📈",
+        "To není růst, to je expanze 😅",
+        "Pivo se samo nevyběhá 🍺",
+        "Forma se někam zakulatila",
+        "Lednička má radost ❤️"
+    ]
 };
 
-// ===== NAČTENÍ + GRAF =====
-let chartInstance = null;
+/* ODPOČET */
+function updateCountdown(){
+    const d=endDate-new Date();
+    if(d<=0){time.innerText="ČAS VYPRŠEL! 🍺";return;}
+    const h=Math.floor(d/36e5),
+          m=Math.floor(d%36e5/6e4),
+          s=Math.floor(d%6e4/1e3);
+    time.innerText=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+setInterval(updateCountdown,1000);updateCountdown();
 
-function loadAll(){
-    fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=300`)
-        .then(r => r.json())
-        .then(data => {
-            if(!data.feeds) return;
+/* TABULKY */
+function makeTable(id,name){
+    let html=`<tr><th>Den</th><th>Váha</th><th></th></tr>`;
+    for(let d=1;d<=lastDay;d++){
+        html+=`<tr class="${d===today?"today":""}">
+        <td>${d}.2.${d===today?" (dnes)":""}</td>
+        <td><input id="${name}${d}" type="number" step="0.1"></td>
+        <td><button onclick="save('${name}',${d})">✔ Uložit</button></td>
+        </tr>`;
+    }
+    document.getElementById(id).innerHTML=html;
+}
+makeTable("lukasTable","lukas");
+makeTable("martinTable","martin");
 
-            const labels = [];
-            const lukasData = [];
-            const martinData = [];
-
-            for(let d = 1; d <= lastDayFeb; d++){
-                labels.push(d + ".2");
-
-                let lv = null, mv = null;
-
-                for(let i = data.feeds.length - 1; i >= 0; i--){
-                    const f = data.feeds[i];
-                    const dt = new Date(f.created_at);
-
-                    if(dt.getMonth() === MONTH_INDEX && dt.getDate() === d){
-                        if(lv === null && f.field1) lv = f.field1;
-                        if(mv === null && f.field2) mv = f.field2;
-                        if(lv && mv) break;
-                    }
-                }
-
-                if(lv) document.getElementById("lukas" + d).value = lv;
-                if(mv) document.getElementById("martin" + d).value = mv;
-
-                lukasData.push(lv ? Number(lv) : null);
-                martinData.push(mv ? Number(mv) : null);
-            }
-
-            drawChart(labels, lukasData, martinData);
-        })
-        .catch(() => alert("Chyba při načítání dat"));
+/* HLÁŠKA */
+function showMessage(text){
+    const el=document.getElementById("msg");
+    el.innerText=text;
+    el.classList.remove("hide");
+    el.classList.add("show");
+    setTimeout(()=>{
+        el.classList.remove("show");
+        el.classList.add("hide");
+    },5000);
 }
 
-function drawChart(labels, lukas, martin){
-    if(chartInstance) chartInstance.destroy();
-
-    chartInstance = new Chart(
-        document.getElementById("chart"),
-        {
-            type: "line",
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: "Lukáš",
-                        data: lukas,
-                        borderColor: "#ff4444",
-                        tension: 0.3,
-                        spanGaps: true
-                    },
-                    {
-                        label: "Martin",
-                        data: martin,
-                        borderColor: "#4488ff",
-                        tension: 0.3,
-                        spanGaps: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { title: { display: true, text: "Váha (kg)" } },
-                    x: { title: { display: true, text: "Den (únor)" } }
-                }
-            }
+/* ULOŽENÍ */
+window.save=function(name,day){
+    const input=document.getElementById(name+day);
+    const v=input.value;
+    if(!v||v<40||v>200){alert("Zadej váhu 40–200");return;}
+    const field=name==="lukas"?1:2;
+    fetch(`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${v}`)
+    .then(r=>r.text())
+    .then(id=>{
+        if(id!=="0"){
+            const arr=messages[name];
+            showMessage(arr[Math.floor(Math.random()*arr.length)]);
+            setTimeout(loadAll,5500);
         }
-    );
-}
+    });
+};
 
+/* DATA + GRAF */
+let chart;
+function loadAll(){
+fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=300`)
+.then(r=>r.json())
+.then(d=>{
+    const l=[],ld=[],md=[];
+    for(let i=1;i<=lastDay;i++){
+        l.push(i+".2");let lv=null,mv=null;
+        d.feeds.slice().reverse().forEach(f=>{
+            const dt=new Date(f.created_at);
+            if(dt.getMonth()===MONTH&&dt.getDate()===i){
+                if(lv===null&&f.field1)lv=f.field1;
+                if(mv===null&&f.field2)mv=f.field2;
+            }
+        });
+        if(lv)lukas+i.value=lv;
+        if(mv)martin+i.value=mv;
+        ld.push(lv?+lv:null);
+        md.push(mv?+mv:null);
+    }
+    if(chart)chart.destroy();
+    chart=new Chart(chartEl,{
+        type:"line",
+        data:{labels:l,datasets:[
+            {label:"Lukáš",data:ld,borderColor:"#ff4444",spanGaps:true},
+            {label:"Martin",data:md,borderColor:"#4488ff",spanGaps:true}
+        ]},
+        options:{responsive:true,maintainAspectRatio:false}
+    });
+});
+}
+const chartEl=document.getElementById("chart");
 loadAll();
 
 });
