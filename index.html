@@ -132,20 +132,19 @@ const today=new Date().getDate();
 const endDate=new Date(year,MONTH,lastDay,23,59,59);
 
 /* HLÁŠKY */
-const messages={
-    lukas:[
-        "Lukáši… forma se kutálí 🍺",
-        "Činky pláčou 😈",
-        "Tohle pivo samo neshodíš",
-        "Aspoň máš stabilitu 😏"
-    ],
-    martin:[
-        "Martine, váha mluví 📈",
-        "To není růst svalů 😅",
-        "Lednička má radost",
-        "Forma šla na dovolenou"
-    ]
-};
+const messages = [
+    "Lukáš: forma se kutálí 🍺",
+    "Martin: váha mluví 📈",
+    "Lukáš: činky brečí 😈",
+    "Martin: lednička má radost 😅",
+    "Lukáš: tohle pivo samo nespadne",
+    "Martin: růst… ale špatným směrem",
+    "Lukáš: stabilita především 😏",
+    "Martin: dieta šla na dovolenou"
+];
+let msgIndex = 0;
+let msgTimer = null;
+
 let currentPerson = "lukas"; // výchozí
 let msgIndex = 0;
 
@@ -178,18 +177,20 @@ makeTable("lukasTable","lukas");
 makeTable("martinTable","martin");
 
 /* HLÁŠKA */
-function showMessage(text){
-    document.getElementById("msg").innerText = text;
-}
 function startMessageRotation(){
     const el = document.getElementById("msg");
 
-    setInterval(() => {
-        const arr = messages[currentPerson];
-        el.innerText = arr[msgIndex % arr.length];
+    // 🔥 hned po otevření stránky
+    el.innerText = messages[0];
+    msgIndex = 1;
+
+    // 🔁 každých 5 sekund další
+    msgTimer = setInterval(() => {
+        el.innerText = messages[msgIndex % messages.length];
         msgIndex++;
     }, 5000);
 }
+
 
 
 
