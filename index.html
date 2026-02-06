@@ -175,14 +175,22 @@ updateCountdown();
 function startMessageRotation(){
     const el = document.getElementById("msg");
 
-    el.innerText = messages[0];
-    msgIndex = 1;
+    // 🔀 náhodný start, ale vždy na začátku dvojice (Martin/Lukáš)
+    const pairCount = Math.floor(messages.length / 2);
+    const startPair = Math.floor(Math.random() * pairCount);
+    msgIndex = startPair * 2;
 
+    // hned zobraz první náhodnou hlášku
+    el.innerText = messages[msgIndex];
+    msgIndex++;
+
+    // pak normální rotace
     setInterval(() => {
         el.innerText = messages[msgIndex % messages.length];
         msgIndex++;
     }, 5000);
 }
+
 
 
 /* TABULKY */
