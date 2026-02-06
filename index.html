@@ -146,6 +146,8 @@ const messages={
         "Forma šla na dovolenou"
     ]
 };
+let currentPerson = "lukas"; // výchozí
+let msgIndex = 0;
 
 /* ODPOČET */
 function updateCountdown(){
@@ -177,9 +179,18 @@ makeTable("martinTable","martin");
 
 /* HLÁŠKA */
 function showMessage(text){
-    const el = document.getElementById("msg");
-    el.innerText = text;
+    document.getElementById("msg").innerText = text;
 }
+function startMessageRotation(){
+    const el = document.getElementById("msg");
+
+    setInterval(() => {
+        const arr = messages[currentPerson];
+        el.innerText = arr[msgIndex % arr.length];
+        msgIndex++;
+    }, 5000);
+}
+
 
 
 /* ULOŽENÍ */
@@ -195,8 +206,10 @@ window.save=function(name,day){
     .then(r=>r.text())
     .then(id=>{
         if(id!=="0"){
-            const arr=messages[name];
-            showMessage(arr[Math.floor(Math.random()*arr.length)]);
+            currentPerson = name;
+msgIndex = 0;
+showMessage(messages[name][0]);
+
             setTimeout(loadAll,5200);
         }
     });
@@ -242,6 +255,7 @@ fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${RE
 });
 }
 loadAll();
+startMessageRotation();
 
 });
 </script>
