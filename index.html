@@ -56,7 +56,6 @@ button{
     cursor:pointer;
 }
 button:hover{background:#ff7700}
-button:disabled{opacity:.6;cursor:not-allowed}
 
 /* HLÁŠKA */
 .message{
@@ -75,11 +74,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
     100% { transform:scale(1); }
 }
 
-.message.show{
-    opacity:1;
-    transform:translateY(0);
-}
-
 .chart-container{
     max-width:1000px;
     height:400px;
@@ -95,10 +89,12 @@ canvas{width:100%;height:100%}
 
 <body>
 <div class="container">
-    
-    <p style="font-size:24px">🍺 Do konca února nám zbývá 🍺</p>
-<h1 id="time">00:00:00</h1>
+
+    <p style="font-size:24px">🍺 Do konce února nám zbývá 🍺</p>
+    <h1 id="time">00:00:00</h1>
+
     <div class="message" id="msg">---</div>
+
     <div class="tables">
         <div class="table-box">
             <h2>Lukáš</h2>
@@ -109,8 +105,6 @@ canvas{width:100%;height:100%}
             <table id="martinTable"></table>
         </div>
     </div>
-
-    
 
     <h2>📈 Vývoj váhy – únor</h2>
     <div class="chart-container">
@@ -125,13 +119,13 @@ const CHANNEL_ID="3249143";
 const WRITE_API_KEY="H753ZAUO7U3LT3J6";
 const READ_API_KEY="1RDF4Q2Y54BGZSNB";
 
-const MONTH=1; // únor
+const MONTH=1;
 const year=new Date().getFullYear();
 const lastDay=new Date(year,MONTH+1,0).getDate();
 const today=new Date().getDate();
 const endDate=new Date(year,MONTH,lastDay,23,59,59);
 
-/* HLÁŠKY */
+/* HLÁŠKY – SPOLEČNÉ */
 const messages = [
     "Lukáš: forma se kutálí 🍺",
     "Martin: váha mluví 📈",
@@ -142,10 +136,7 @@ const messages = [
     "Lukáš: stabilita především 😏",
     "Martin: dieta šla na dovolenou"
 ];
-let msgIndex = 0;
-let msgTimer = null;
 
-let currentPerson = "lukas"; // výchozí
 let msgIndex = 0;
 
 /* ODPOČET */
@@ -159,6 +150,18 @@ function updateCountdown(){
 }
 setInterval(updateCountdown,1000);
 updateCountdown();
+
+/* ROTACE HLÁŠEK */
+function startMessageRotation(){
+    const el=document.getElementById("msg");
+    el.innerText=messages[0];
+    msgIndex=1;
+
+    setInterval(()=>{
+        el.innerText=messages[msgIndex % messages.length];
+        msgIndex++;
+    },5000);
+}
 
 /* TABULKY */
 function makeTable(id,name){
@@ -176,24 +179,6 @@ function makeTable(id,name){
 makeTable("lukasTable","lukas");
 makeTable("martinTable","martin");
 
-/* HLÁŠKA */
-function startMessageRotation(){
-    const el = document.getElementById("msg");
-
-    // 🔥 hned po otevření stránky
-    el.innerText = messages[0];
-    msgIndex = 1;
-
-    // 🔁 každých 5 sekund další
-    msgTimer = setInterval(() => {
-        el.innerText = messages[msgIndex % messages.length];
-        msgIndex++;
-    }, 5000);
-}
-
-
-
-
 /* ULOŽENÍ */
 window.save=function(name,day){
     const input=document.getElementById(name+day);
@@ -204,16 +189,7 @@ window.save=function(name,day){
     }
     const field=name==="lukas"?1:2;
     fetch(`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}`)
-    .then(r=>r.text())
-    .then(id=>{
-        if(id!=="0"){
-            currentPerson = name;
-msgIndex = 0;
-showMessage(messages[name][0]);
-
-            setTimeout(loadAll,5200);
-        }
-    });
+    .then(()=>setTimeout(loadAll,1000));
 };
 
 /* DATA + GRAF */
@@ -255,6 +231,7 @@ fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${RE
     });
 });
 }
+
 loadAll();
 startMessageRotation();
 
