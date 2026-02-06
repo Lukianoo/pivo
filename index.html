@@ -173,15 +173,17 @@ updateCountdown();
 
 /* ROTACE HLÁŠEK */
 function startMessageRotation(){
-    const el=document.getElementById("msg");
-    el.innerText=messages[0];
-    msgIndex=1;
+    const el = document.getElementById("msg");
 
-    setInterval(()=>{
-        el.innerText=messages[msgIndex % messages.length];
+    el.innerText = messages[0];
+    msgIndex = 1;
+
+    setInterval(() => {
+        el.innerText = messages[msgIndex % messages.length];
         msgIndex++;
-    },5000);
+    }, 5000);
 }
+
 
 /* TABULKY */
 function makeTable(id,name){
