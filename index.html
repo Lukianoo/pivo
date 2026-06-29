@@ -1,90 +1,474 @@
-# 🌤️ Meteostanice Palkovice
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Palkovice — Meteostanice</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap');
 
-Jednoduchá mobilní webová aplikace pro zobrazení meteorologických dat ze stanice **Palkovice** ([amet.cz](http://www.amet.cz/aktualPalkovice.html)).
+:root{
+  --bg:#0b0f1a;
+  --panel:#111827;
+  --border:#1e2d45;
+  --blue:#3b82f6;
+  --cyan:#22d3ee;
+  --green:#4ade80;
+  --amber:#fbbf24;
+  --red:#f87171;
+  --purple:#a78bfa;
+  --pink:#f472b6;
+  --muted:#4b5563;
+  --dim:#6b7280;
+  --text:#f1f5f9;
+  --sub:#94a3b8;
+}
 
-Optimalizováno pro **Android 4.4.2 / Chrome 31** — funguje bez jakýchkoli moderních závislostí.
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',Arial,sans-serif}
 
----
+/* ── HEADER ── */
+header{
+  padding:14px 16px 10px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--panel);
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{font-size:22px}
+.logo-text{line-height:1.2}
+.logo-text h1{font-size:16px;font-weight:600;letter-spacing:.5px}
+.logo-text p{font-size:11px;color:var(--dim)}
 
-## 📱 Screenshoty / ukázka
+.status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.err{background:var(--red)}
+.dot.spin{background:var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-Aplikace zobrazuje:
-- 🌡️ Teplota vzduchu a půdy
-- 💧 Vlhkost vzduchu a rosný bod
-- 🔵 Atmosferický tlak
-- 💨 Rychlost a směr větru, nárazy
-- 🌧️ Srážky (minutové + denní)
-- ☀️ Sluneční záření a UV index
+.btn-refresh{
+  background:none;border:1px solid var(--border);color:var(--sub);
+  padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;
+  font-family:inherit;transition:border-color .2s,color .2s
+}
+.btn-refresh:active{border-color:var(--blue);color:var(--blue)}
 
----
+/* ── TIME STRIP ── */
+.timestrip{
+  padding:6px 16px;background:#0d1524;
+  border-bottom:1px solid var(--border);
+  font-size:11px;color:var(--muted);
+  display:flex;justify-content:space-between
+}
+.timestrip b{color:var(--sub)}
 
-## 🚀 Použití
+/* ── GRID ── */
+.grid{
+  padding:12px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
 
-### Varianta A – GitHub Pages (doporučeno)
+/* ── CARD ── */
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 14px 12px;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  border-radius:12px 12px 0 0;
+}
+.card.c-blue::before{background:var(--blue)}
+.card.c-cyan::before{background:var(--cyan)}
+.card.c-green::before{background:var(--green)}
+.card.c-amber::before{background:var(--amber)}
+.card.c-red::before{background:var(--red)}
+.card.c-purple::before{background:var(--purple)}
+.card.c-pink::before{background:var(--pink)}
 
-1. Forkni tento repozitář
-2. Jdi do **Settings → Pages**
-3. Nastav source: `main` / `/ (root)`
-4. Otevři na telefonu: `https://TVOJE_JMENO.github.io/REPO_NAZEV/`
+.card-label{
+  font-size:10px;font-weight:600;letter-spacing:1px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+  display:flex;align-items:center;gap:5px
+}
+.card-label span{font-size:13px}
 
-### Varianta B – Lokálně
+.card-value{
+  font-family:'Share Tech Mono',monospace;
+  font-size:42px;line-height:1;color:var(--text);
+  letter-spacing:-1px;
+}
+.card-value .unit{
+  font-size:16px;font-family:'Inter',sans-serif;
+  color:var(--sub);letter-spacing:0;margin-left:2px
+}
+.card-value .dash{color:var(--muted);font-size:36px}
 
-Stáhni `index.html` a otevři přímo v prohlížeči. **Nevyžaduje server.**
+.card-sub{
+  font-size:11px;color:var(--dim);margin-top:7px;
+  line-height:1.5;font-family:'Inter',sans-serif
+}
+.card-sub b{color:var(--sub)}
 
----
+/* big card (full width) */
+.card.wide{grid-column:1/-1;padding:14px 16px}
+.card.wide .card-value{font-size:52px}
 
-## 🔧 Technické detaily
+/* ── WIND DIRECTION ── */
+.wind-row{display:flex;align-items:flex-end;gap:10px}
+.wind-compass{
+  width:36px;height:36px;border-radius:50%;
+  border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;margin-top:4px;flex-shrink:0
+}
 
-| Vlastnost | Hodnota |
-|-----------|---------|
-| Cílová platforma | Android 4.4.2, Chrome 31.0.1650.59 |
-| Závislosti | **žádné** (čisté HTML/CSS/JS) |
-| Zdroj dat | http://www.amet.cz/aktualPalkovice.html |
-| Obnova dat | automaticky každých 5 minut |
-| CORS proxy | allorigins.win → corsproxy.io → thingproxy (fallback) |
+/* ── LOADER / ERROR ── */
+.loader{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;gap:14px;color:var(--dim);font-size:13px
+}
+.spinner{
+  width:28px;height:28px;border:2px solid var(--border);
+  border-top-color:var(--blue);border-radius:50%;
+  animation:rot .7s linear infinite
+}
+@keyframes rot{to{transform:rotate(360deg)}}
 
-### Kompatibilita
+.error-panel{
+  margin:12px;padding:16px;border-radius:12px;
+  background:#1a0a0a;border:1px solid #3f1f1f;
+  font-size:13px;color:#fca5a5;line-height:1.6
+}
+.error-panel strong{color:var(--red);display:block;margin-bottom:8px;font-size:14px}
+.error-panel a{color:var(--blue)}
 
-- ✅ Android 4.4.2 / Chrome 31
-- ✅ Moderní prohlížeče (Chrome, Firefox, Safari)
-- ✅ Bez ES6+, bez Fetch API, bez CSS Grid
-- ✅ Používá `XMLHttpRequest`, `-webkit-` prefixy, `flexbox` s prefixy
+/* ── FOOTER ── */
+footer{
+  text-align:center;padding:10px;
+  font-size:10px;color:var(--muted);
+  border-top:1px solid var(--border);
+}
+footer a{color:var(--muted)}
 
-### Datový zdroj
+/* ── RESPONSIVE pro velmi úzké displeje ── */
+@media(max-width:320px){
+  .card-value{font-size:36px}
+  .card.wide .card-value{font-size:42px}
+}
+</style>
+</head>
+<body>
 
-Data jsou načítána z veřejné HTML stránky `amet.cz` přes CORS proxy,
-protože stránka amet.cz neobsahuje CORS hlavičky. Aplikace zkouší tři
-různé proxy v pořadí a při selhání zobrazí chybovou hlášku.
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌦</div>
+    <div class="logo-text">
+      <h1>Palkovice</h1>
+      <p>amet.cz · Meteostanice</p>
+    </div>
+  </div>
+  <div class="status">
+    <div class="dot spin" id="dot"></div>
+    <span id="statusText">Načítám…</span>
+    <button class="btn-refresh" onclick="load()">↺</button>
+  </div>
+</header>
 
----
+<div class="timestrip">
+  <span id="measTime">Čas měření: —</span>
+  <span id="loadTime">Načteno: —</span>
+</div>
 
-## 📂 Struktura souborů
+<div id="content">
+  <div class="loader">
+    <div class="spinner"></div>
+    <span>Načítám data z amet.cz…</span>
+  </div>
+</div>
 
-```
-.
-└── index.html    # Celá aplikace v jednom souboru
-```
+<footer>
+  <a href="http://www.amet.cz/aktualPalkovice.html" target="_blank">↗ Přímý odkaz amet.cz</a>
+</footer>
 
----
+<script>
+/* ================================================================
+   Meteostanice Palkovice — přehledný dashboard
+   Zdroj: http://www.amet.cz/aktualPalkovice.html
+   Kompatibilní s Android 4.4.2 / Chrome 31
+   ================================================================ */
 
-## ⚙️ Přizpůsobení
-
-Chceš zobrazovat jinou stanici amet.cz? V souboru `index.html` změň URL v proměnné `PROXY_URLS`:
-
-```javascript
-var PROXY_URLS = [
-  'https://api.allorigins.win/get?url=' + encodeURIComponent('http://www.amet.cz/aktualXXXXXX.html'),
-  ...
+var SRC = 'http://www.amet.cz/aktualPalkovice.html';
+var PROXIES = [
+  'https://api.allorigins.win/get?url=' + encodeURIComponent(SRC),
+  'https://corsproxy.io/?' + encodeURIComponent(SRC),
+  'https://thingproxy.freeboard.io/fetch/' + SRC
 ];
-```
+var INTERVAL = 5 * 60 * 1000;
 
-Interval obnovy (výchozí 5 minut) změníš v:
-```javascript
-var REFRESH_MS = 5 * 60 * 1000;
-```
+/* ── Parsování HTML stránky amet.cz ── */
+function parseHtml(html) {
+  var d = {};
 
----
+  /* Dekódování HTML entit */
+  html = html
+    .replace(/&nbsp;/gi,' ')
+    .replace(/&deg;/gi,'°')
+    .replace(/&amp;/gi,'&')
+    .replace(/&#176;/g,'°')
+    .replace(/<br\s*\/?>/gi,' ')
+    .replace(/<[^>]*>/g,' ')
+    .replace(/\s{2,}/g,' ');
 
-## 📄 Licence
+  /* ── Pomocné funkce ── */
+  function rn(re) {
+    var m = html.match(re);
+    return m ? parseFloat(m[1].replace(',','.')) : undefined;
+  }
+  function rs(re) {
+    var m = html.match(re);
+    return m ? m[1].trim() : undefined;
+  }
 
-MIT — volně použij a uprav.
+  /* amet.cz tabulka: klíč .... hodnota .... jednotka
+     Hodnoty jsou vždy čísla v buňkách, odděleny mezerami po stripování tagů.
+     Parsujeme dvojice "klíčové slovo + číslo" */
+
+  /* Teplota vzduchu */
+  d.temp = rn(/[Tt]eplota\s+vzduchu\s*[:\s]+(-?\d+[,.]?\d*)/);
+  if(d.temp===undefined) d.temp = rn(/[Tt]eplota\s*[:\s]+(-?\d+[,.]?\d*)\s*°/);
+  if(d.temp===undefined) d.temp = rn(/[Tt]emp\.?\s*vzd\.?\s*[:\s]+(-?\d+[,.]?\d*)/);
+
+  /* Min/Max teplota */
+  d.tMin = rn(/[Mm]in(?:im[aá]ln[ií])?\s*[Tt]eplota?\s*[:\s]+(-?\d+[,.]?\d*)/);
+  d.tMax = rn(/[Mm]ax(?:im[aá]ln[ií])?\s*[Tt]eplota?\s*[:\s]+(-?\d+[,.]?\d*)/);
+  if(!d.tMin) d.tMin = rn(/Tmin\s*[:\s]+(-?\d+[,.]?\d*)/);
+  if(!d.tMax) d.tMax = rn(/Tmax\s*[:\s]+(-?\d+[,.]?\d*)/);
+
+  /* Teplota půdy */
+  d.tGnd = rn(/[Tt]eplota\s+p[uůú]d[ay]\s*[:\s]+(-?\d+[,.]?\d*)/);
+
+  /* Vlhkost */
+  d.hum = rn(/[Vv]lhkost\s+vzduchu\s*[:\s]+(\d+[,.]?\d*)/);
+  if(!d.hum) d.hum = rn(/[Vv]lhkost\s*[:\s]+(\d+[,.]?\d*)\s*%/);
+  if(!d.hum) d.hum = rn(/RH\s*[:\s]+(\d+[,.]?\d*)/);
+
+  /* Rosný bod */
+  d.dew = rn(/[Rr]osn[yý]\s+bod\s*[:\s]+(-?\d+[,.]?\d*)/);
+  if(!d.dew) d.dew = rn(/Td\s*[:\s]+(-?\d+[,.]?\d*)/);
+
+  /* Tlak */
+  d.pres = rn(/[Tt]lak\s+(?:vzduchu\s+)?(?:red\.\s*na\s+(?:hladinu\s+)?moře\s*)?[:\s]+(\d{3,4}[,.]?\d*)\s*hPa/i);
+  if(!d.pres) d.pres = rn(/(\d{3,4}[,.]?\d*)\s*hPa/);
+
+  /* Vítr — rychlost */
+  d.windSpd = rn(/[Rr]ychlost\s+v[ií]tru\s*[:\s]+(\d+[,.]?\d*)/);
+  if(!d.windSpd) d.windSpd = rn(/[Vv][ií]tr\s*[:\s]+(\d+[,.]?\d*)\s*km/);
+
+  /* Vítr — náraz */
+  d.windGust = rn(/[Nn][áa]raz[^\d]*(\d+[,.]?\d*)/);
+
+  /* Vítr — směr */
+  d.windDir = rs(/[Ss]m[eě]r\s+v[ií]tru\s*[:\s]+([A-ZŠŽSEJVZSJV]{1,3})/);
+  if(!d.windDir) d.windDir = rs(/[Vv][ií]tr\s+ze\s+([a-zA-ZšžŠŽ]+)/);
+
+  /* Srážky */
+  d.rain = rn(/[Ss]r[áa][žz]ky\s+(?:aktu[áa]ln[ií]|minuta|mm\/min|hod)[^\d]*(\d+[,.]?\d*)/);
+  if(!d.rain) d.rain = rn(/[Ss]r[áa][žz]ky\s*[:\s]+(\d+[,.]?\d*)\s*mm/);
+
+  d.rainDay = rn(/[Ss]r[áa][žz]ky\s+(?:denn[ií]|za\s*den|denní\s*úhrn)[^\d]*(\d+[,.]?\d*)/);
+
+  /* Sluneční záření */
+  d.solar = rn(/[Ss]lune[čc]n[ií]\s+z[áa][řr]en[ií]\s*[:\s]+(\d+[,.]?\d*)/);
+  if(!d.solar) d.solar = rn(/[Gg]lob[aá]ln[ií]\s+z[áa][řr]en[ií]\s*[:\s]+(\d+[,.]?\d*)/);
+  if(!d.solar) d.solar = rn(/[Rr]adiac[ei]\s*[:\s]+(\d+[,.]?\d*)/);
+
+  /* UV index */
+  d.uv = rn(/UV\s*[:\s]+(\d+[,.]?\d*)/i);
+
+  /* Čas měření — hledáme formát HH:MM nebo HH.MM */
+  d.time = rs(/Datum[:\s]+\d+\.\d+\.\d+\s+(\d{1,2}[:.]\d{2})/);
+  if(!d.time) d.time = rs(/(\d{1,2}[:.]\d{2})\s*(?:hod|UTC|SEČ|SELČ)/);
+  if(!d.time) d.time = rs(/Čas[:\s]+(\d{1,2}[:.]\d{2})/);
+
+  d.date = rs(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})/);
+
+  return d;
+}
+
+/* ── Směrová šipka ── */
+var ARROWS = {
+  'N':'↑','S':'↓','E':'→','W':'←',
+  'NE':'↗','NW':'↖','SE':'↘','SW':'↙',
+  'SZ':'↖','JZ':'↙','JV':'↘','SV':'↗',
+  'J':'↓','V':'→','Z':'←','SJ':'↕'
+};
+function arrow(d){ return ARROWS[d]||'·'; }
+
+/* ── Formátování čísel ── */
+function fmt(v,dec){
+  if(v===undefined||v===null||isNaN(v)) return '<span class="dash">—</span>';
+  return dec===0 ? Math.round(v).toString() : v.toFixed(dec!==undefined?dec:1);
+}
+function unit(u){ return '<span class="unit">'+u+'</span>'; }
+
+/* ── Renderování dashboardu ── */
+function render(d){
+  var h='<div class="grid">';
+
+  /* ── TEPLOTA (wide, dominantní) ── */
+  h+='<div class="card wide c-blue">';
+  h+='<div class="card-label"><span>🌡</span>Teplota vzduchu</div>';
+  h+='<div class="card-value">'+fmt(d.temp)+''+unit('°C')+'</div>';
+  var sub=[];
+  if(d.tMin!==undefined) sub.push('Min <b>'+fmt(d.tMin)+'°C</b>');
+  if(d.tMax!==undefined) sub.push('Max <b>'+fmt(d.tMax)+'°C</b>');
+  if(d.tGnd!==undefined) sub.push('Půda <b>'+fmt(d.tGnd)+'°C</b>');
+  if(sub.length) h+='<div class="card-sub">'+sub.join(' &nbsp;·&nbsp; ')+'</div>';
+  h+='</div>';
+
+  /* ── VLHKOST ── */
+  h+='<div class="card c-cyan">';
+  h+='<div class="card-label"><span>💧</span>Vlhkost</div>';
+  h+='<div class="card-value">'+fmt(d.hum,0)+''+unit('%')+'</div>';
+  if(d.dew!==undefined) h+='<div class="card-sub">Rosný bod <b>'+fmt(d.dew)+'°C</b></div>';
+  h+='</div>';
+
+  /* ── TLAK ── */
+  h+='<div class="card c-purple">';
+  h+='<div class="card-label"><span>⏲</span>Tlak</div>';
+  h+='<div class="card-value">'+fmt(d.pres)+''+unit('hPa')+'</div>';
+  h+='</div>';
+
+  /* ── VÍTR ── */
+  h+='<div class="card c-green">';
+  h+='<div class="card-label"><span>💨</span>Vítr</div>';
+  h+='<div class="wind-row">';
+  h+='<div class="card-value">'+fmt(d.windSpd)+''+unit('km/h')+'</div>';
+  if(d.windDir) h+='<div class="wind-compass">'+arrow(d.windDir)+'</div>';
+  h+='</div>';
+  var ws=[];
+  if(d.windDir) ws.push('Směr <b>'+d.windDir+'</b>');
+  if(d.windGust!==undefined) ws.push('Náraz <b>'+fmt(d.windGust)+' km/h</b>');
+  if(ws.length) h+='<div class="card-sub">'+ws.join(' &nbsp;·&nbsp; ')+'</div>';
+  h+='</div>';
+
+  /* ── SRÁŽKY ── */
+  h+='<div class="card c-blue">';
+  h+='<div class="card-label"><span>🌧</span>Srážky</div>';
+  h+='<div class="card-value">'+fmt(d.rain,1)+''+unit('mm')+'</div>';
+  if(d.rainDay!==undefined) h+='<div class="card-sub">Denní úhrn <b>'+fmt(d.rainDay,1)+' mm</b></div>';
+  h+='</div>';
+
+  /* ── ZÁŘENÍ / UV ── */
+  h+='<div class="card c-amber">';
+  h+='<div class="card-label"><span>☀</span>Záření</div>';
+  h+='<div class="card-value">'+fmt(d.solar,0)+''+unit('W/m²')+'</div>';
+  if(d.uv!==undefined) h+='<div class="card-sub">UV index <b>'+fmt(d.uv,1)+'</b></div>';
+  h+='</div>';
+
+  h+='</div>'; /* /grid */
+  document.getElementById('content').innerHTML=h;
+}
+
+/* ── Error state ── */
+function showError(msg){
+  document.getElementById('content').innerHTML=
+    '<div class="error-panel">'+
+    '<strong>⚠ Data se nepodařilo načíst</strong>'+
+    msg+
+    '<br><br>'+
+    '<a href="'+SRC+'" target="_blank">↗ Otevřít amet.cz přímo</a>'+
+    '</div>';
+}
+
+/* ── Status helper ── */
+function setStatus(state,txt){
+  var d=document.getElementById('dot');
+  d.className='dot '+(state==='ok'?'ok':state==='err'?'err':'spin');
+  document.getElementById('statusText').textContent=txt;
+}
+
+/* ── Pad zero ── */
+function p2(n){return n<10?'0'+n:''+n;}
+
+/* ── Načítání přes proxy řetězec ── */
+function tryProxy(i){
+  if(i>=PROXIES.length){
+    setStatus('err','Chyba připojení');
+    showError('Server amet.cz blokuje automatické stahování. Zkuste stránku otevřít přímo.');
+    return;
+  }
+
+  var url=PROXIES[i];
+  var xhr=new XMLHttpRequest();
+  xhr.open('GET',url,true);
+  xhr.timeout=14000;
+
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState!==4) return;
+    if(xhr.status>=200 && xhr.status<300){
+      try{
+        var text=xhr.responseText;
+        /* allorigins zabaluje do JSON {contents: "..."} */
+        if(url.indexOf('allorigins')!==-1){
+          var j=JSON.parse(text);
+          text=j.contents||text;
+        }
+        /* Kontrola: dostali jsme skutečný HTML met. stanice? */
+        var hasData = text.indexOf('Palkovice')!==-1 ||
+                      text.indexOf('amet')!==-1 ||
+                      text.indexOf('teplota')!==-1 ||
+                      text.indexOf('Teplota')!==-1 ||
+                      text.indexOf('<td')!==-1 ||
+                      text.indexOf('<table')!==-1;
+        if(!hasData){ tryProxy(i+1); return; }
+
+        var d=parseHtml(text);
+
+        /* Zkontroluj zda máme aspoň teplotu nebo vlhkost */
+        if(d.temp===undefined && d.hum===undefined && d.pres===undefined){
+          tryProxy(i+1); return;
+        }
+
+        render(d);
+        setStatus('ok','Aktuální');
+
+        if(d.time || d.date){
+          var t='';
+          if(d.date) t+=d.date+' ';
+          if(d.time) t+=d.time;
+          document.getElementById('measTime').textContent='Měření: '+t.trim();
+        }
+
+        var now=new Date();
+        document.getElementById('loadTime').textContent=
+          'Načteno '+p2(now.getHours())+':'+p2(now.getMinutes())+':'+p2(now.getSeconds());
+
+      } catch(e){ tryProxy(i+1); }
+    } else {
+      tryProxy(i+1);
+    }
+  };
+  xhr.ontimeout=function(){ tryProxy(i+1); };
+  xhr.onerror=function(){ tryProxy(i+1); };
+  try{ xhr.send(); } catch(e){ tryProxy(i+1); }
+}
+
+function load(){
+  setStatus('spin','Načítám…');
+  document.getElementById('content').innerHTML=
+    '<div class="loader"><div class="spinner"></div><span>Načítám data…</span></div>';
+  tryProxy(0);
+}
+
+load();
+setInterval(load, INTERVAL);
+</script>
+</body>
+</html>
