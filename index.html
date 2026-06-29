@@ -1,271 +1,90 @@
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Odpočet k prvnímu pivu 🍺</title>
+# 🌤️ Meteostanice Palkovice
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+Jednoduchá mobilní webová aplikace pro zobrazení meteorologických dat ze stanice **Palkovice** ([amet.cz](http://www.amet.cz/aktualPalkovice.html)).
 
-<style>
-body{
-    background:linear-gradient(45deg,#ffcc00,#ff6600);
-    font-family:"Comic Sans MS", cursive;
-    margin:0;
-    color:#333;
-}
-.container{
-    max-width:1200px;
-    margin:auto;
-    padding:15px;
-    text-align:center;
-}
-h1{font-size:48px;margin:20px 0}
-.tables{
-    display:flex;
-    gap:20px;
-    flex-wrap:wrap;
-    justify-content:center;
-}
-.table-box{max-width:520px;width:100%}
-table{
-    width:100%;
-    border-collapse:collapse;
-    background:white;
-    border-radius:15px;
-    overflow:hidden;
-    box-shadow:0 4px 15px rgba(0,0,0,0.2);
-}
-th,td{
-    border:1px solid #ccc;
-    padding:12px;
-}
-th{background:#ff9900;color:white}
-.today{background:#ffe066;font-weight:bold}
-input{
-    width:100%;
-    padding:8px;
-    font-size:16px;
-}
-button{
-    padding:8px 14px;
-    background:#ff9900;
-    color:white;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-}
-button:hover{background:#ff7700}
+Optimalizováno pro **Android 4.4.2 / Chrome 31** — funguje bez jakýchkoli moderních závislostí.
 
-/* HLÁŠKA */
-.message{
-    margin:20px auto;
-    padding:20px;
-    background:white;
-    border-radius:15px;
-    font-size:22px;
-    max-width:900px;
-    box-shadow:0 4px 15px rgba(0,0,0,0.2);
-    animation:pulse 2.5s infinite;
-}
-@keyframes pulse{
-    0%   { transform:scale(1); }
-    50%  { transform:scale(1.04); }
-    100% { transform:scale(1); }
-}
+---
 
-.chart-container{
-    max-width:1000px;
-    height:400px;
-    margin:auto;
-    background:white;
-    border-radius:15px;
-    padding:20px;
-    box-shadow:0 4px 15px rgba(0,0,0,0.2);
-}
-canvas{width:100%;height:100%}
-</style>
-</head>
+## 📱 Screenshoty / ukázka
 
-<body>
-<div class="container">
+Aplikace zobrazuje:
+- 🌡️ Teplota vzduchu a půdy
+- 💧 Vlhkost vzduchu a rosný bod
+- 🔵 Atmosferický tlak
+- 💨 Rychlost a směr větru, nárazy
+- 🌧️ Srážky (minutové + denní)
+- ☀️ Sluneční záření a UV index
 
-    <p style="font-size:24px">🍺 Do konce února nám zbývá 🍺</p>
-    <h1 id="time">00:00:00</h1>
+---
 
-    <div class="message" id="msg">---</div>
+## 🚀 Použití
 
-    <div class="tables">
-        <div class="table-box">
-            <h2>Lukáš</h2>
-            <table id="lukasTable"></table>
-        </div>
-        <div class="table-box">
-            <h2>Martin</h2>
-            <table id="martinTable"></table>
-        </div>
-    </div>
+### Varianta A – GitHub Pages (doporučeno)
 
-    <h2>📈 Vývoj váhy – únor</h2>
-    <div class="chart-container">
-        <canvas id="chart"></canvas>
-    </div>
-</div>
+1. Forkni tento repozitář
+2. Jdi do **Settings → Pages**
+3. Nastav source: `main` / `/ (root)`
+4. Otevři na telefonu: `https://TVOJE_JMENO.github.io/REPO_NAZEV/`
 
-<script>
-document.addEventListener("DOMContentLoaded",()=>{
+### Varianta B – Lokálně
 
-const CHANNEL_ID="3249143";
-const WRITE_API_KEY="H753ZAUO7U3LT3J6";
-const READ_API_KEY="1RDF4Q2Y54BGZSNB";
+Stáhni `index.html` a otevři přímo v prohlížeči. **Nevyžaduje server.**
 
-const MONTH=1;
-const year=new Date().getFullYear();
-const lastDay=new Date(year,MONTH+1,0).getDate();
-const today=new Date().getDate();
-const endDate=new Date(year,MONTH,lastDay,23,59,59);
+---
 
-/* HLÁŠKY – SPOLEČNÉ */
-const messages = [
-    // 1
-    "Martine jedeš suchý únor na plný pecky 💪🚀",
-    "Lukáši držíš suchý únor jak boss 💪😤",
+## 🔧 Technické detaily
 
-    // 2
-    "Martine váha dolů disciplína nahoru 📉📈",
-    "Lukáši každý den bez piva tě posouvá dál 🧠➡️",
+| Vlastnost | Hodnota |
+|-----------|---------|
+| Cílová platforma | Android 4.4.2, Chrome 31.0.1650.59 |
+| Závislosti | **žádné** (čisté HTML/CSS/JS) |
+| Zdroj dat | http://www.amet.cz/aktualPalkovice.html |
+| Obnova dat | automaticky každých 5 minut |
+| CORS proxy | allorigins.win → corsproxy.io → thingproxy (fallback) |
 
-    // 3
-    "Martine není to lehké ale právě proto to funguje 😤",
-    "Lukáši disciplína dnes forma zítra 🔥",
+### Kompatibilita
 
-    // 4
-    "Martine síla není jen ve svalech ale v hlavě 🧠🔥",
-    "Lukáši tělo maká hlava trénuje 🏋️‍♂️🧠",
+- ✅ Android 4.4.2 / Chrome 31
+- ✅ Moderní prohlížeče (Chrome, Firefox, Safari)
+- ✅ Bez ES6+, bez Fetch API, bez CSS Grid
+- ✅ Používá `XMLHttpRequest`, `-webkit-` prefixy, `flexbox` s prefixy
 
-    // 5
-    "Martine březen tě odmění 🍺🏆",
-    "Lukáši vydrž březen se blíží 🍺⏳",
+### Datový zdroj
 
-    // 6 – společné motivační
-    "Každý den bez piva je malé vítězství 🏆",
-    "Forma se dělá když se nechce 😈➡️💪",
+Data jsou načítána z veřejné HTML stránky `amet.cz` přes CORS proxy,
+protože stránka amet.cz neobsahuje CORS hlavičky. Aplikace zkouší tři
+různé proxy v pořadí a při selhání zobrazí chybovou hlášku.
 
-    // 7
-    "Suchý únor bolí ale výsledek stojí za to 💥",
-    "Vydržet únor umí jen silní 💪"
+---
+
+## 📂 Struktura souborů
+
+```
+.
+└── index.html    # Celá aplikace v jednom souboru
+```
+
+---
+
+## ⚙️ Přizpůsobení
+
+Chceš zobrazovat jinou stanici amet.cz? V souboru `index.html` změň URL v proměnné `PROXY_URLS`:
+
+```javascript
+var PROXY_URLS = [
+  'https://api.allorigins.win/get?url=' + encodeURIComponent('http://www.amet.cz/aktualXXXXXX.html'),
+  ...
 ];
+```
 
+Interval obnovy (výchozí 5 minut) změníš v:
+```javascript
+var REFRESH_MS = 5 * 60 * 1000;
+```
 
-let msgIndex = 0;
+---
 
-/* ODPOČET */
-function updateCountdown(){
-    const diff=endDate-new Date();
-    if(diff<=0){time.innerText="ČAS VYPRŠEL! 🍺";return;}
-    const h=Math.floor(diff/36e5);
-    const m=Math.floor(diff%36e5/6e4);
-    const s=Math.floor(diff%6e4/1e3);
-    time.innerText=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-}
-setInterval(updateCountdown,1000);
-updateCountdown();
+## 📄 Licence
 
-/* ROTACE HLÁŠEK */
-function startMessageRotation(){
-    const el = document.getElementById("msg");
-
-    // 🔀 náhodný start, ale vždy na začátku dvojice (Martin/Lukáš)
-    const pairCount = Math.floor(messages.length / 2);
-    const startPair = Math.floor(Math.random() * pairCount);
-    msgIndex = startPair * 2;
-
-    // hned zobraz první náhodnou hlášku
-    el.innerText = messages[msgIndex];
-    msgIndex++;
-
-    // pak normální rotace
-    setInterval(() => {
-        el.innerText = messages[msgIndex % messages.length];
-        msgIndex++;
-    }, 5000);
-}
-
-
-
-/* TABULKY */
-function makeTable(id,name){
-    let html=`<tr><th>Den</th><th>Váha</th><th></th></tr>`;
-    for(let d=1;d<=lastDay;d++){
-        html+=`
-        <tr class="${d===today?"today":""}">
-            <td>${d}.2.${d===today?" (dnes)":""}</td>
-            <td><input id="${name}${d}" type="number" step="0.1"></td>
-            <td><button onclick="save('${name}',${d})">✔ Uložit</button></td>
-        </tr>`;
-    }
-    document.getElementById(id).innerHTML=html;
-}
-makeTable("lukasTable","lukas");
-makeTable("martinTable","martin");
-
-/* ULOŽENÍ */
-window.save=function(name,day){
-    const input=document.getElementById(name+day);
-    const value=input.value;
-    if(!value||value<40||value>200){
-        alert("Zadej váhu 40–200 kg");
-        return;
-    }
-    const field=name==="lukas"?1:2;
-    fetch(`https://api.thingspeak.com/update?api_key=${WRITE_API_KEY}&field${field}=${value}`)
-    .then(()=>setTimeout(loadAll,1000));
-};
-
-/* DATA + GRAF */
-let chart=null;
-const chartEl=document.getElementById("chart");
-
-function loadAll(){
-fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=300`)
-.then(r=>r.json())
-.then(data=>{
-    const labels=[],ld=[],md=[];
-    for(let d=1;d<=lastDay;d++){
-        labels.push(d+".2");
-        let lv=null,mv=null;
-        for(let i=data.feeds.length-1;i>=0;i--){
-            const f=data.feeds[i];
-            const dt=new Date(f.created_at);
-            if(dt.getMonth()===MONTH && dt.getDate()===d){
-                if(lv===null && f.field1) lv=f.field1;
-                if(mv===null && f.field2) mv=f.field2;
-            }
-        }
-        if(lv) document.getElementById("lukas"+d).value=lv;
-        if(mv) document.getElementById("martin"+d).value=mv;
-        ld.push(lv?+lv:null);
-        md.push(mv?+mv:null);
-    }
-    if(chart) chart.destroy();
-    chart=new Chart(chartEl,{
-        type:"line",
-        data:{
-            labels,
-            datasets:[
-                {label:"Lukáš",data:ld,borderColor:"#ff4444",spanGaps:true},
-                {label:"Martin",data:md,borderColor:"#4488ff",spanGaps:true}
-            ]
-        },
-        options:{responsive:true,maintainAspectRatio:false}
-    });
-});
-}
-
-loadAll();
-startMessageRotation();
-
-});
-</script>
-</body>
-</html>
+MIT — volně použij a uprav.
